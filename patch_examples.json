@@ -1,0 +1,315 @@
+{
+  "patch_examples": [
+    {
+      "name": "Базовый патч для добавления телепорта",
+      "version": "1.0.1",
+      "description": "Добавление телепорта 'Магазин оружия' в основном мире",
+      "changes": [
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Магазин оружия",
+            "x": 150,
+            "y": 64,
+            "z": -50,
+            "world": "default",
+            "description": "Лучший оружейный магазин в городе"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Массовое добавление ивентовых локаций",
+      "version": "1.1.0",
+      "description": "Добавление специальных локаций для зимнего ивента",
+      "changes": [
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Зимняя арена",
+            "x": -300,
+            "y": 70,
+            "z": -300,
+            "world": "default",
+            "description": "Арена для зимних боёв и соревнований"
+          }
+        },
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Ледяная пещера",
+            "x": -250,
+            "y": 45,
+            "z": -400,
+            "world": "default",
+            "description": "Таинственная пещера полная сокровищ"
+          }
+        },
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Новогодний городок",
+            "x": 0,
+            "y": 75,
+            "z": -500,
+            "world": "default",
+            "description": "Праздничная локация с подарками и развлечениями"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Обновление безопасности",
+      "version": "1.0.2",
+      "description": "Удаление опасных телепортов и добавление безопасных альтернатив",
+      "changes": [
+        {
+          "type": "remove_teleport",
+          "data": {
+            "teleport_id": "tp_dangerous_location"
+          }
+        },
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Безопасная зона отдыха",
+            "x": 250,
+            "y": 80,
+            "z": 250,
+            "world": "default",
+            "description": "Безопасное место для новичков и отдыха"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Патч для творческого мира",
+      "version": "1.2.0",
+      "description": "Добавление телепортов в творческом мире для строителей",
+      "changes": [
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Площадка для строительства #1",
+            "x": 100,
+            "y": 100,
+            "z": 100,
+            "world": "creative",
+            "description": "Первая площадка для крупных построек"
+          }
+        },
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Площадка для строительства #2",
+            "x": -100,
+            "y": 100,
+            "z": 100,
+            "world": "creative",
+            "description": "Вторая площадка для командных проектов"
+          }
+        },
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Материалы и ресурсы",
+            "x": 0,
+            "y": 120,
+            "z": 200,
+            "world": "creative",
+            "description": "Склад с материалами для строительства"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Патч для PvP зон",
+      "version": "1.3.0",
+      "description": "Обновление PvP арен и добавление новых боевых локаций",
+      "changes": [
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Арена 1v1",
+            "x": -400,
+            "y": 65,
+            "z": -200,
+            "world": "default",
+            "description": "Арена для дуэлей один на один"
+          }
+        },
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Командная арена",
+            "x": -500,
+            "y": 65,
+            "z": -300,
+            "world": "default",
+            "description": "Большая арена для командных сражений"
+          }
+        },
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Тренировочный полигон",
+            "x": -350,
+            "y": 70,
+            "z": -150,
+            "world": "default",
+            "description": "Место для отработки боевых навыков"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Экстренный патч",
+      "version": "1.0.3",
+      "description": "Исправление критической ошибки и добавление экстренного спавна",
+      "changes": [
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Экстренный выход",
+            "x": 0,
+            "y": 100,
+            "z": 0,
+            "world": "default",
+            "description": "Экстренная точка телепортации при проблемах"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Расширение подземелий",
+      "version": "1.4.0",
+      "description": "Добавление входов в новые подземелья и секретные локации",
+      "changes": [
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Вход в подземелье 'Тёмные коридоры'",
+            "x": 300,
+            "y": 20,
+            "z": 300,
+            "world": "default",
+            "description": "Опасное подземелье с ценными наградами"
+          }
+        },
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Секретная библиотека",
+            "x": -150,
+            "y": 50,
+            "z": 450,
+            "world": "default",
+            "description": "Скрытая библиотека с древними знаниями"
+          }
+        },
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Алхимическая лаборатория",
+            "x": 180,
+            "y": 55,
+            "z": -180,
+            "world": "default",
+            "description": "Место для изучения алхимии и зельеварения"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Обновление транспортной системы",
+      "version": "1.5.0",
+      "description": "Добавление транспортных узлов и железнодорожных станций",
+      "changes": [
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Центральный вокзал",
+            "x": 50,
+            "y": 64,
+            "z": 50,
+            "world": "default",
+            "description": "Главный транспортный узел города"
+          }
+        },
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Северная станция",
+            "x": 100,
+            "y": 64,
+            "z": 800,
+            "world": "default",
+            "description": "Станция в северном районе"
+          }
+        },
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Южная станция",
+            "x": 100,
+            "y": 64,
+            "z": -800,
+            "world": "default",
+            "description": "Станция в южном районе"
+          }
+        },
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Восточная станция",
+            "x": 800,
+            "y": 64,
+            "z": 100,
+            "world": "default",
+            "description": "Станция в восточном районе"
+          }
+        },
+        {
+          "type": "add_teleport",
+          "data": {
+            "name": "Западная станция",
+            "x": -800,
+            "y": 64,
+            "z": 100,
+            "world": "default",
+            "description": "Станция в западном районе"
+          }
+        }
+      ]
+    }
+  ],
+  "usage_instructions": {
+    "ru": {
+      "title": "Инструкция по использованию патчей",
+      "steps": [
+        "1. Скопируйте нужный патч из примеров выше",
+        "2. Откройте админ-панель (admin_panel.php)",
+        "3. Перейдите в раздел 'Система патчей'",
+        "4. Вставьте данные патча в соответствующие поля",
+        "5. Нажмите 'Предпросмотр' для проверки",
+        "6. Нажмите 'Применить патч' для внедрения изменений"
+      ],
+      "notes": [
+        "⚠️ Перед применением патча обязательно сделайте резервную копию данных",
+        "📝 Все патчи логируются в системе для отслеживания изменений", 
+        "🔍 Используйте функцию предпросмотра для проверки корректности патча",
+        "🚫 Не применяйте патчи на продакшен сервере без предварительного тестирования"
+      ]
+    }
+  },
+  "api_usage": {
+    "curl_example": {
+      "description": "Пример применения патча через cURL",
+      "command": "curl -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d 'action=apply_patch&patch_data={\"version\":\"1.0.1\",\"description\":\"Тестовый патч\",\"changes\":[{\"type\":\"add_teleport\",\"data\":{\"name\":\"Тест\",\"x\":0,\"y\":64,\"z\":0,\"world\":\"default\",\"description\":\"Тестовый телепорт\"}}]}' http://yourserver.com/rp_teleport_plugin.php"
+    },
+    "php_example": {
+      "description": "Пример применения патча через PHP",
+      "code": "<?php\n$patch_data = [\n    'version' => '1.0.1',\n    'description' => 'Тестовый патч',\n    'changes' => [\n        [\n            'type' => 'add_teleport',\n            'data' => [\n                'name' => 'Тест',\n                'x' => 0,\n                'y' => 64,\n                'z' => 0,\n                'world' => 'default',\n                'description' => 'Тестовый телепорт'\n            ]\n        ]\n    ]\n];\n\n$postData = [\n    'action' => 'apply_patch',\n    'patch_data' => json_encode($patch_data)\n];\n\n$context = stream_context_create([\n    'http' => [\n        'method' => 'POST',\n        'header' => 'Content-Type: application/x-www-form-urlencoded',\n        'content' => http_build_query($postData)\n    ]\n]);\n\n$result = file_get_contents('http://yourserver.com/rp_teleport_plugin.php', false, $context);\n$response = json_decode($result, true);\n\nif ($response['success']) {\n    echo 'Патч успешно применён!';\n} else {\n    echo 'Ошибка: ' . $response['message'];\n}\n?>"
+    }
+  }
+}

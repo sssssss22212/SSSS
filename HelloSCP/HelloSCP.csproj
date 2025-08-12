@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>HelloSCP</AssemblyName>
+    <RootNamespace>HelloSCP</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Version>1.0.0</Version>
+    <Authors>YourName</Authors>
+    <Description>Example EXILED plugin for SCP: Secret Laboratory</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Allows building .NET Framework projects on non-Windows (Linux/macOS) by providing reference assemblies -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- Use NuGet packages when available -->
+  <ItemGroup Condition=" '$(UseLocalExiledAssemblies)' != 'true' ">
+    <!-- EXILED packages; use 8.x range for broad compatibility -->
+    <PackageReference Include="Exiled.API" Version="[8.0.0,9.0.0)" />
+    <PackageReference Include="Exiled.Events" Version="[8.0.0,9.0.0)" />
+    <PackageReference Include="Exiled.Permissions" Version="[8.0.0,9.0.0)" />
+  </ItemGroup>
+
+  <!-- Fallback: reference local EXILED assemblies copied from your server's EXILED/Assemblies -->
+  <PropertyGroup>
+    <ExiledAssembliesPath Condition=" '$(ExiledAssembliesPath)' == '' ">$(MSBuildThisFileDirectory)lib</ExiledAssembliesPath>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(UseLocalExiledAssemblies)' == 'true' ">
+    <Reference Include="Exiled.API">
+      <HintPath>$(ExiledAssembliesPath)/Exiled.API.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Exiled.Events">
+      <HintPath>$(ExiledAssembliesPath)/Exiled.Events.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Exiled.Permissions">
+      <HintPath>$(ExiledAssembliesPath)/Exiled.Permissions.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+</Project>

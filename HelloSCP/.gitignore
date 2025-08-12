@@ -1,0 +1,9 @@
+bin/
+obj/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+lib/

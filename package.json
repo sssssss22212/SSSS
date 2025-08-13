@@ -1,0 +1,49 @@
+{
+  "name": "dx-project-mobile",
+  "version": "1.0.0",
+  "description": "DX Project Mobile App - SCP: Secret Laboratory Community",
+  "main": "index.js",
+  "scripts": {
+    "dev": "webpack serve --mode=development",
+    "build": "webpack --mode=production",
+    "cordova-prepare": "cordova prepare",
+    "cordova-build": "cordova build android",
+    "cordova-run": "cordova run android",
+    "build-apk": "npm run build && cordova build android --release"
+  },
+  "keywords": ["scp", "secret-laboratory", "mobile", "gaming", "community"],
+  "author": "DX Project Team",
+  "license": "MIT",
+  "devDependencies": {
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.0",
+    "webpack-dev-server": "^4.15.0",
+    "html-webpack-plugin": "^5.5.0",
+    "css-loader": "^6.8.0",
+    "style-loader": "^3.3.0",
+    "file-loader": "^6.2.0",
+    "url-loader": "^4.1.1",
+    "copy-webpack-plugin": "^11.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "localforage": "^1.10.0",
+    "swiper": "^10.0.0",
+    "animate.css": "^4.1.1"
+  },
+  "cordova": {
+    "platforms": [
+      "android"
+    ],
+    "plugins": {
+      "cordova-plugin-whitelist": {},
+      "cordova-plugin-statusbar": {},
+      "cordova-plugin-device": {},
+      "cordova-plugin-splashscreen": {},
+      "cordova-plugin-inappbrowser": {},
+      "cordova-plugin-network-information": {},
+      "cordova-plugin-file": {},
+      "cordova-plugin-file-transfer": {}
+    }
+  }
+}

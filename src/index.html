@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: gap:; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'; object-src *; img-src * data: 'unsafe-inline'; connect-src * 'unsafe-inline'; frame-src *;">
+    <title>DX Project Mobile</title>
+    
+    <!-- PWA Meta -->
+    <meta name="theme-color" content="#dc143c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DX Project">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
+    
+    <!-- Splash Screen -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="DX Project">
+    
+    <!-- Preload fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <img src="assets/images/logo.png" alt="DX Project" class="splash-logo animate__animated animate__pulse animate__infinite">
+            <h1 class="splash-title">DX PROJECT</h1>
+            <p class="splash-subtitle">SCP: Secret Laboratory</p>
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="app-container" style="display: none;">
+        <!-- Status Bar Spacer -->
+        <div class="status-bar-spacer"></div>
+
+        <!-- Header -->
+        <header id="app-header" class="app-header">
+            <div class="header-content">
+                <button id="menu-btn" class="menu-btn">
+                    <span class="hamburger"></span>
+                </button>
+                <div class="header-title">
+                    <img src="assets/images/logo-small.png" alt="DX" class="header-logo">
+                    <span id="page-title">DX Project</span>
+                </div>
+                <div class="header-actions">
+                    <button id="notifications-btn" class="action-btn">
+                        <span class="notification-icon">🔔</span>
+                        <span class="notification-badge" style="display: none;">3</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Side Menu -->
+        <nav id="side-menu" class="side-menu">
+            <div class="menu-overlay"></div>
+            <div class="menu-content">
+                <div class="menu-header">
+                    <div class="user-info" id="menu-user-info">
+                        <div class="user-avatar">
+                            <img id="user-avatar-img" src="assets/images/default-avatar.png" alt="User">
+                        </div>
+                        <div class="user-details">
+                            <div class="user-name" id="user-name">Гость</div>
+                            <div class="user-balance" id="user-balance">0₽</div>
+                        </div>
+                    </div>
+                    <button id="menu-close-btn" class="menu-close-btn">×</button>
+                </div>
+                
+                <div class="menu-items">
+                    <a href="#" class="menu-item active" data-page="main">
+                        <span class="menu-icon">🏠</span>
+                        <span class="menu-text">Главная</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="servers">
+                        <span class="menu-icon">🖥️</span>
+                        <span class="menu-text">Сервера</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="donate">
+                        <span class="menu-icon">💎</span>
+                        <span class="menu-text">Донат</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="rules">
+                        <span class="menu-icon">📋</span>
+                        <span class="menu-text">Правила</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="applications">
+                        <span class="menu-icon">📝</span>
+                        <span class="menu-text">Заявки</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="news">
+                        <span class="menu-icon">📰</span>
+                        <span class="menu-text">Новости</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="profile">
+                        <span class="menu-icon">👤</span>
+                        <span class="menu-text">Профиль</span>
+                    </a>
+                </div>
+                
+                <div class="menu-footer">
+                    <button id="logout-btn" class="logout-btn">
+                        <span class="menu-icon">🚪</span>
+                        <span class="menu-text">Выйти</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main id="main-content" class="main-content">
+            <!-- Auth Screen -->
+            <div id="auth-screen" class="screen active">
+                <div class="auth-container">
+                    <div class="auth-header">
+                        <img src="assets/images/logo.png" alt="DX Project" class="auth-logo">
+                        <h1>DX PROJECT</h1>
+                        <p>SCP: Secret Laboratory Community</p>
+                    </div>
+                    
+                    <div class="auth-tabs">
+                        <button class="auth-tab active" data-tab="login">Вход</button>
+                        <button class="auth-tab" data-tab="register">Регистрация</button>
+                    </div>
+                    
+                    <!-- Login Form -->
+                    <form id="login-form" class="auth-form active">
+                        <div class="form-group">
+                            <label for="login-email">Email</label>
+                            <input type="email" id="login-email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Пароль</label>
+                            <input type="password" id="login-password" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Войти</button>
+                        
+                        <div class="divider">
+                            <span>или</span>
+                        </div>
+                        
+                        <button type="button" id="steam-login-btn" class="btn btn-steam">
+                            <span class="steam-icon">🎮</span>
+                            Войти через Steam
+                        </button>
+                    </form>
+                    
+                    <!-- Register Form -->
+                    <form id="register-form" class="auth-form">
+                        <div class="form-group">
+                            <label for="register-name">Имя</label>
+                            <input type="text" id="register-name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-email">Email</label>
+                            <input type="email" id="register-email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-password">Пароль</label>
+                            <input type="password" id="register-password" name="password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-confirm-password">Повторите пароль</label>
+                            <input type="password" id="register-confirm-password" name="confirm_password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Main Screen -->
+            <div id="main-screen" class="screen">
+                <div class="screen-content">
+                    <div class="welcome-section">
+                        <h1 class="welcome-title">Добро пожаловать в DX PROJECT</h1>
+                        <p class="welcome-text">Развивающийся проект в сообществе SCP: Secret Laboratory</p>
+                    </div>
+                    
+                    <div class="stats-cards">
+                        <div class="stat-card">
+                            <div class="stat-icon">🎮</div>
+                            <div class="stat-info">
+                                <div class="stat-number" id="total-players">0</div>
+                                <div class="stat-label">Игроков онлайн</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🖥️</div>
+                            <div class="stat-info">
+                                <div class="stat-number" id="total-servers">2</div>
+                                <div class="stat-label">Серверов</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-info">
+                                <div class="stat-number" id="total-users">0</div>
+                                <div class="stat-label">Пользователей</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-cards">
+                        <div class="feature-card">
+                            <h3>🎯 Наша миссия</h3>
+                            <p>Мы создаём различные сервера для комфортного времяпровождения</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>💬 Комьюнити</h3>
+                            <p>Всегда прислушиваемся к мнению нашего комьюнити</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>🚀 Развитие</h3>
+                            <p>Стремимся к постоянному развитию и улучшению</p>
+                        </div>
+                    </div>
+                    
+                    <div class="action-section">
+                        <h2>💎 Поддержка проекта</h2>
+                        <p>Ваше участие — уже огромная поддержка! Спасибо! ^^</p>
+                        <button class="btn btn-primary btn-large" data-page="donate">
+                            💎 Поддержать проект
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other screens will be loaded dynamically -->
+            <div id="servers-screen" class="screen"></div>
+            <div id="donate-screen" class="screen"></div>
+            <div id="rules-screen" class="screen"></div>
+            <div id="applications-screen" class="screen"></div>
+            <div id="news-screen" class="screen"></div>
+            <div id="profile-screen" class="screen"></div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav id="bottom-nav" class="bottom-nav" style="display: none;">
+            <a href="#" class="nav-item active" data-page="main">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Главная</span>
+            </a>
+            <a href="#" class="nav-item" data-page="servers">
+                <span class="nav-icon">🖥️</span>
+                <span class="nav-label">Сервера</span>
+            </a>
+            <a href="#" class="nav-item" data-page="donate">
+                <span class="nav-icon">💎</span>
+                <span class="nav-label">Донат</span>
+            </a>
+            <a href="#" class="nav-item" data-page="profile">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Профиль</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Загрузка...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Modals Container -->
+    <div id="modals-container" class="modals-container"></div>
+</body>
+</html>

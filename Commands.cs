@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using CommandSystem;
 using Exiled.API.Features;
+using Exiled.API.Enums;
 using Exiled.Permissions.Extensions;
 
 namespace Scp096Mask.Commands
@@ -106,7 +107,7 @@ namespace Scp096Mask.Commands
                 return false;
             }
 
-            var medkit = player.AddItem(Exiled.API.Enums.ItemType.Medkit);
+            var medkit = player.AddItem(ItemType.Medkit);
             response = $"✅ Выдали маску SCP-096 игроку <color=green>{player.Nickname}</color> (<color=#aaaaaa>{player.Id}</color>)";
             return true;
         }

@@ -1,11 +1,11 @@
 using System;
 using System.Linq;
 using CommandSystem;
-using Exiled.API.Enums;
 using Exiled.API.Features;
-using Exiled.API.Features.Items;
-using Exiled.API.Features.Pickups;
 using Exiled.Permissions.Extensions;
+using Exiled.API.Features.Pickups;
+using Exiled.API.Enums;
+using Exiled.API.Features.Items;
 
 namespace Scp096Mask.Commands
 {

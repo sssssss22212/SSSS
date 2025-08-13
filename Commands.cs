@@ -4,6 +4,7 @@ using CommandSystem;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.API.Features.Items;
+using Exiled.API.Features.Pickups;
 using Exiled.Permissions.Extensions;
 
 namespace Scp096Mask.Commands
@@ -108,9 +109,11 @@ namespace Scp096Mask.Commands
                 return false;
             }
 
+            // Создаем pickup рядом с игроком
             var medkitItem = Item.Create(ItemType.Medkit);
-            player.AddItem(medkitItem);
-            response = $"✅ Выдали маску SCP-096 игроку <color=green>{player.Nickname}</color> (<color=#aaaaaa>{player.Id}</color>)";
+            var pickup = medkitItem.CreatePickup(player.Position);
+            
+            response = $"✅ Создали маску SCP-096 рядом с игроком <color=green>{player.Nickname}</color> (<color=#aaaaaa>{player.Id}</color>)";
             return true;
         }
 

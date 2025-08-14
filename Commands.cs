@@ -31,6 +31,7 @@ namespace Scp096Mask.Commands
                           "mask096 spawn - заспавнить маски\n" +
                           "mask096 info - информация о масках\n" +
                           "mask096 give <userid> - выдать маску игроку\n" +
+                          "mask096 giveinv <userid> - выдать маску в инвентарь\n" +
                           "mask096 remove <userid> - снять маску с SCP-096\n" +
                           "mask096 list - список замаскированных SCP-096";
                 return false;
@@ -52,6 +53,14 @@ namespace Scp096Mask.Commands
                     }
                     return GiveMask(arguments.At(1), out response);
 
+                case "giveinv":
+                    if (arguments.Count < 2)
+                    {
+                        response = "ℹ Используйте: mask096 giveinv <userid>";
+                        return false;
+                    }
+                    return GiveMaskInventory(arguments.At(1), out response);
+
                 case "remove":
                     if (arguments.Count < 2)
                     {
@@ -64,7 +73,7 @@ namespace Scp096Mask.Commands
                     return ListMaskedScps(out response);
 
                 default:
-                    response = "❌ Неизвестная подкоманда. Доступно: spawn, info, give, remove, list";
+                    response = "❌ Неизвестная подкоманда. Доступно: spawn, info, give, giveinv, remove, list";
                     return false;
             }
         }
@@ -113,7 +122,40 @@ namespace Scp096Mask.Commands
             var medkitItem = Item.Create(ItemType.Medkit);
             var pickup = medkitItem.CreatePickup(player.Position);
             
+            // Добавляем pickup в список масок плагина
+            Plugin.Instance._eventHandlers.spawnedMasks.Add(pickup);
+            
             response = $"✅ Создали маску SCP-096 рядом с игроком <color=green>{player.Nickname}</color> (<color=#aaaaaa>{player.Id}</color>)";
+            return true;
+        }
+
+        private bool GiveMaskInventory(string userId, out string response)
+        {
+            Player player = Player.Get(userId);
+            if (player == null)
+            {
+                response = $"❌ Игрок с ID {userId} не найден!";
+                return false;
+            }
+
+            // Проверяем, есть ли уже маска
+            if (Plugin.Instance?._eventHandlers != null && 
+                Plugin.Instance._eventHandlers.playersWithMasks.Contains(player))
+            {
+                response = $"❌ У игрока {player.Nickname} уже есть маска!";
+                return false;
+            }
+
+            // Добавляем игрока в список с масками
+            if (Plugin.Instance?._eventHandlers != null)
+            {
+                Plugin.Instance._eventHandlers.playersWithMasks.Add(player);
+            }
+
+            // Даем аптечку в инвентарь
+            player.AddItem(ItemType.Medkit);
+            
+            response = $"✅ Выдали маску SCP-096 в инвентарь игроку <color=green>{player.Nickname}</color> (<color=#aaaaaa>{player.Id}</color>)";
             return true;
         }
 

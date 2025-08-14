@@ -27,7 +27,7 @@ namespace Scp096Mask
         public List<Pickup> spawnedMasks = new List<Pickup>();
         
         // Игроки с масками
-        private HashSet<Player> playersWithMasks = new HashSet<Player>();
+        public HashSet<Player> playersWithMasks = new HashSet<Player>();
         
         // SCP-096 с масками
         private HashSet<Player> maskedScp096s = new HashSet<Player>();
@@ -129,8 +129,18 @@ namespace Scp096Mask
 
         private void OnPickingUpItem(PickingUpItemEventArgs ev)
         {
-            if (ev.Pickup.Type != ItemType.Medkit || !spawnedMasks.Contains(ev.Pickup))
+            if (ev.Pickup.Type != ItemType.Medkit)
                 return;
+
+            // Проверяем, является ли это маской (либо из списка, либо обычная аптечка)
+            bool isMask = spawnedMasks.Contains(ev.Pickup);
+            
+            if (!isMask)
+            {
+                // Проверяем, хочет ли игрок превратить обычную аптечку в маску
+                // Пока что пропускаем обычные аптечки
+                return;
+            }
 
             if (playersWithMasks.Contains(ev.Player))
             {

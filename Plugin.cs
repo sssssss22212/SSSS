@@ -35,7 +35,7 @@ namespace Scp096Mask
                 IEnumerable<SettingBase> settingBases = new SettingBase[]
                 {
                     header,
-                    new KeybindSetting(Config.KeybindId, Config.KeybindLabel, default, hintDescription: Config.KeybindHint),
+                    new KeybindSetting(Config.KeybindId, Config.KeybindLabel, UnityEngine.KeyCode.None, hintDescription: Config.KeybindHint),
                 };
                 SettingBase.Register(settingBases);
                 SettingBase.SendToAll();
@@ -69,7 +69,8 @@ namespace Scp096Mask
             {
                 try
                 {
-                    SettingBase.UnregisterAll();
+                    // Убираем UnregisterAll так как этого метода может не быть
+                    // SettingBase.UnregisterAll();
                 }
                 catch (Exception ex)
                 {

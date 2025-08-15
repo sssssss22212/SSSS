@@ -142,10 +142,10 @@ namespace Scp096Mask.Patches
     }
 
     /// <summary>
-    /// Патч для предотвращения запуска ярости при взгляде на замаскированного SCP-096
+    /// Патч для предотвращения проверки видимости замаскированного SCP-096
     /// </summary>
-    [HarmonyPatch(typeof(Scp096TargetsTracker), nameof(Scp096TargetsTracker.LookingAt))]
-    public static class Scp096LookingAtPatch
+    [HarmonyPatch(typeof(Scp096TargetsTracker), "IsObserving")]
+    public static class Scp096IsObservingPatch
     {
         public static bool Prefix(Scp096TargetsTracker instance, ReferenceHub target, ref bool result)
         {
@@ -168,7 +168,76 @@ namespace Scp096Mask.Patches
             }
             catch (Exception ex)
             {
-                Log.Error($"Ошибка в Scp096LookingAtPatch: {ex}");
+                Log.Error($"Ошибка в Scp096IsObservingPatch: {ex}");
+                return true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Патч для предотвращения вызова ярости при смотрении на замаскированного SCP-096
+    /// </summary>
+    [HarmonyPatch(typeof(Scp096TargetsTracker), "CanBeTriggeredBy")]
+    public static class Scp096CanBeTriggeredByPatch
+    {
+        public static bool Prefix(Scp096TargetsTracker instance, ReferenceHub target, ref bool result)
+        {
+            try
+            {
+                if (Plugin.Instance?._eventHandlers == null)
+                    return true;
+
+                var scp096Player = Player.Get(instance.Owner);
+                if (scp096Player == null)
+                    return true;
+
+                if (Plugin.Instance._eventHandlers.IsScp096Masked(scp096Player))
+                {
+                    result = false;
+                    if (Plugin.Instance.Config.Debug)
+                        Log.Debug($"SCP-096 {scp096Player.Nickname} с маской не может быть активирован игроком {Player.Get(target)?.Nickname}");
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Ошибка в Scp096CanBeTriggeredByPatch: {ex}");
+                return true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Патч для предотвращения удаления цели замаскированным SCP-096
+    /// </summary>
+    [HarmonyPatch(typeof(Scp096TargetsTracker), nameof(Scp096TargetsTracker.RemoveTarget))]
+    public static class Scp096RemoveTargetPatch
+    {
+        public static bool Prefix(Scp096TargetsTracker instance, ReferenceHub target)
+        {
+            try
+            {
+                if (Plugin.Instance?._eventHandlers == null)
+                    return true;
+
+                var scp096Player = Player.Get(instance.Owner);
+                if (scp096Player == null)
+                    return true;
+
+                if (Plugin.Instance._eventHandlers.IsScp096Masked(scp096Player))
+                {
+                    if (Plugin.Instance.Config.Debug)
+                        Log.Debug($"SCP-096 {scp096Player.Nickname} с маской не удаляет цель {Player.Get(target)?.Nickname}");
+                    return true; // Позволяем удаление цели
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Ошибка в Scp096RemoveTargetPatch: {ex}");
                 return true;
             }
         }

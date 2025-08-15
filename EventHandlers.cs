@@ -12,9 +12,6 @@ using PlayerRoles;
 using UnityEngine;
 using UserSettings.ServerSpecific;
 using Scp096Mask.Enums;
-using Hint = HintServiceMeow.Core.Models.Hints.Hint;
-using HintServiceMeow.Core.Enum;
-using HintServiceMeow.Core.Utilities;
 
 namespace Scp096Mask
 {
@@ -34,9 +31,6 @@ namespace Scp096Mask
         
         // Процессы одевания масок
         private Dictionary<Player, CoroutineHandle> equipProcesses = new Dictionary<Player, CoroutineHandle>();
-        
-        // Хинты игроков
-        private Dictionary<Player, Hint> playerHints = new Dictionary<Player, Hint>();
         
         // Визуальные эффекты масок
         private Dictionary<Pickup, CoroutineHandle> maskVisualEffects = new Dictionary<Pickup, CoroutineHandle>();
@@ -252,8 +246,6 @@ namespace Scp096Mask
                     Timing.KillCoroutines(process);
                 equipProcesses.Remove(player);
             }
-
-            ClearPlayerHint(player);
         }
 
         private void OnVerified(VerifiedEventArgs ev)
@@ -278,7 +270,7 @@ namespace Scp096Mask
                 return;
 
             if (settingBase is SSKeybindSetting keybindSetting && 
-                keybindSetting.SettingId == _config.KeybindId && 
+                keybindSetting.SettingId.Equals(_config.KeybindId) && 
                 keybindSetting.SyncIsPressed)
             {
                 TryInteractWithScp096(player);
@@ -486,7 +478,13 @@ namespace Scp096Mask
                         spawnedCount++;
 
                         if (_config.AdvancedSpawn.LogMaskSpawns)
-                            Log.Info($"Маска SCP-096 создана в {Room.FindParentRoom(position)?.Type} ({position})");
+                        {
+                            var parentRoom = Room.FindParentRoom(position);
+                            if (parentRoom != null)
+                                Log.Info($"Маска SCP-096 создана в {parentRoom.Type} ({position})");
+                            else
+                                Log.Info($"Маска SCP-096 создана в неизвестной комнате ({position})");
+                        }
                     }
                 });
             }
@@ -681,7 +679,13 @@ namespace Scp096Mask
                         ApplyMaskVisualEffects(pickup);
 
                         if (_config.AdvancedSpawn.LogMaskSpawns)
-                            Log.Info($"Респавн маски SCP-096 в {Room.FindParentRoom(position)?.Type}");
+                        {
+                            var parentRoom = Room.FindParentRoom(position);
+                            if (parentRoom != null)
+                                Log.Info($"Респавн маски SCP-096 в {parentRoom.Type}");
+                            else
+                                Log.Info($"Респавн маски SCP-096 в неизвестной комнате");
+                        }
                     }
                 }
             }
@@ -724,73 +728,20 @@ namespace Scp096Mask
                     Timing.KillCoroutines(process);
             }
             equipProcesses.Clear();
-            
-            ClearAllHints();
         }
 
         private void ShowHint(Player player, string message, float duration)
         {
             try
             {
-                if (!playerHints.TryGetValue(player, out var hint))
-                {
-                    hint = new Hint
-                    {
-                        FontSize = _config.HintSettings.TextSize,
-                        XCoordinate = _config.HintSettings.XPosition,
-                        YCoordinate = _config.HintSettings.YPosition,
-                        Alignment = HintAlignment.Center,
-                        SyncSpeed = HintSyncSpeed.Fast,
-                        Hide = false
-                    };
-                    PlayerDisplay.Get(player).AddHint(hint);
-                    playerHints[player] = hint;
-                }
-
-                hint.Text = message;
-                hint.Hide = false;
-                
-                Timing.CallDelayed(duration, () =>
-                {
-                    if (playerHints.TryGetValue(player, out var h) && h.Text == message)
-                    {
-                        h.Hide = true;
-                    }
-                });
+                // Fallback на обычный хинт Exiled
+                player.ShowHint(message, (ushort)duration);
             }
             catch (Exception ex)
             {
                 if (_config.Debug)
                     Log.Error($"Не удалось показать хинт: {ex}");
-                
-                // Fallback на обычный хинт
-                try
-                {
-                    player.ShowHint(message, (ushort)duration);
-                }
-                catch
-                {
-                    // Игнорируем ошибки fallback
-                }
             }
-        }
-
-        private void ClearPlayerHint(Player player)
-        {
-            if (playerHints.TryGetValue(player, out var hint))
-            {
-                hint.Hide = true;
-                playerHints.Remove(player);
-            }
-        }
-
-        private void ClearAllHints()
-        {
-            foreach (var hint in playerHints.Values)
-            {
-                hint.Hide = true;
-            }
-            playerHints.Clear();
         }
 
         // Публичные методы для использования в других классах

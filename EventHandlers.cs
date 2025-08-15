@@ -5,6 +5,7 @@ using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.API.Features.Items;
 using Exiled.API.Features.Pickups;
+using Exiled.API.Features.Core.UserSettings;
 using Exiled.Events.EventArgs.Player;
 using Exiled.Events.EventArgs.Server;
 using MEC;
@@ -254,12 +255,30 @@ namespace Scp096Mask
             {
                 try
                 {
-                    ServerSpecificSettingsSync.SendToPlayer(ev.Player.ReferenceHub);
+                    // Отправляем серверные настройки игроку с задержкой
+                    Timing.CallDelayed(2f, () =>
+                    {
+                        try
+                        {
+                            if (ev.Player != null && ev.Player.IsConnected)
+                            {
+                                SettingBase.SendToPlayer(ev.Player.ReferenceHub);
+                                
+                                if (_config.Debug)
+                                    Log.Debug($"Серверные настройки отправлены игроку {ev.Player.Nickname}");
+                            }
+                        }
+                        catch (Exception ex2)
+                        {
+                            if (_config.Debug)
+                                Log.Debug($"Ошибка отправки настроек игроку {ev.Player.Nickname}: {ex2}");
+                        }
+                    });
                 }
                 catch (Exception ex)
                 {
                     if (_config.Debug)
-                        Log.Debug($"Ошибка отправки настроек игроку {ev.Player.Nickname}: {ex}");
+                        Log.Debug($"Ошибка при попытке отправить настройки игроку {ev.Player.Nickname}: {ex}");
                 }
             }
         }

@@ -6,11 +6,16 @@ using Exiled.Permissions.Extensions;
 using Exiled.API.Features.Items;
 using Exiled.API.Enums;
 using PlayerRoles;
+using UnityEngine;
 
 namespace Scp096Mask.Commands
 {
+    /// <summary>
+    /// Основная команда для управления масками SCP-096
+    /// </summary>
     [CommandHandler(typeof(RemoteAdminCommandHandler))]
     [CommandHandler(typeof(GameConsoleCommandHandler))]
+    [CommandHandler(typeof(ClientCommandHandler))]
     public class MaskCommands : ICommand
     {
         public string Command { get; } = "mask096";
@@ -19,26 +24,56 @@ namespace Scp096Mask.Commands
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {
-            if (!sender.CheckPermission("mask096.admin"))
+            // Проверяем права для админских команд
+            bool isAdmin = sender.CheckPermission("mask096.admin");
+            bool isPlayer = sender is Player;
+
+            if (arguments.Count == 0)
+            {
+                response = GetHelpMessage(isAdmin);
+                return true; // Показываем помощь как успешный результат
+            }
+
+            string subCommand = arguments.At(0).ToLower();
+
+            // Команды для всех пользователей
+            switch (subCommand)
+            {
+                case "help":
+                case "?":
+                    response = GetHelpMessage(isAdmin);
+                    return true;
+
+                case "info":
+                    if (!isAdmin)
+                    {
+                        response = "<color=red>У вас нет прав на использование этой команды!</color>";
+                        return false;
+                    }
+                    return ShowMasksInfo(out response);
+
+                case "use":
+                case "activate":
+                    if (!isPlayer)
+                    {
+                        response = "<color=red>Эта команда доступна только игрокам!</color>";
+                        return false;
+                    }
+                    return TryUseMask((Player)sender, out response);
+            }
+
+            // Команды только для администраторов
+            if (!isAdmin)
             {
                 response = "<color=red>У вас нет прав на использование этой команды!</color>\n" +
                           "<color=yellow>Требуется разрешение:</color> mask096.admin";
                 return false;
             }
 
-            if (arguments.Count == 0)
-            {
-                response = GetHelpMessage();
-                return false;
-            }
-
-            switch (arguments.At(0).ToLower())
+            switch (subCommand)
             {
                 case "spawn":
                     return HandleSpawnCommand(arguments, out response);
-
-                case "info":
-                    return ShowMasksInfo(out response);
 
                 case "give":
                     return HandleGiveCommand(arguments, out response);
@@ -62,35 +97,119 @@ namespace Scp096Mask.Commands
                 case "stats":
                     return ShowDetailedStats(out response);
 
-                case "help":
-                case "?":
-                    response = GetHelpMessage();
-                    return true;
+                case "debug":
+                    return HandleDebugCommand(arguments, out response);
 
                 default:
-                    response = $"<color=red>Неизвестная подкоманда:</color> {arguments.At(0)}\n" + GetHelpMessage();
+                    response = $"<color=red>Неизвестная подкоманда:</color> {subCommand}\n" + GetHelpMessage(isAdmin);
                     return false;
             }
         }
 
-        private string GetHelpMessage()
+        private string GetHelpMessage(bool isAdmin)
         {
-            return "<color=yellow>═══════ Команды масок SCP-096 ═══════</color>\n" +
-                   "<color=cyan>Основные команды:</color>\n" +
-                   "• <color=white>mask096 spawn [количество]</color> - заспавнить маски\n" +
-                   "• <color=white>mask096 info</color> - основная информация о масках\n" +
-                   "• <color=white>mask096 stats</color> - подробная статистика\n" +
-                   "• <color=white>mask096 clear</color> - удалить все маски с карты\n" +
-                   "• <color=white>mask096 reload</color> - перезагрузить конфигурацию\n\n" +
-                   "<color=cyan>Работа с игроками:</color>\n" +
-                   "• <color=white>mask096 give <userid> [x] [y] [z]</color> - создать маску в позиции\n" +
-                   "• <color=white>mask096 giveinv <userid></color> - выдать маску в инвентарь\n" +
-                   "• <color=white>mask096 remove <userid></color> - снять маску с SCP-096\n" +
-                   "• <color=white>mask096 list</color> - список замаскированных SCP-096\n\n" +
-                   "<color=gray>Примеры использования:</color>\n" +
-                   "• mask096 spawn 3\n" +
-                   "• mask096 give Player123 100 1 50\n" +
-                   "• mask096 giveinv 76561198012345678";
+            string help = "<color=yellow>═══════ Команды масок SCP-096 ═══════</color>\n" +
+                         "<color=cyan>Основные команды:</color>\n" +
+                         "• <color=white>mask096 help</color> - показать эту справку\n" +
+                         "• <color=white>mask096 use</color> - использовать маску (только игроки)\n";
+
+            if (isAdmin)
+            {
+                help += "\n<color=cyan>Команды администратора:</color>\n" +
+                        "• <color=white>mask096 spawn [количество]</color> - заспавнить маски\n" +
+                        "• <color=white>mask096 info</color> - основная информация о масках\n" +
+                        "• <color=white>mask096 stats</color> - подробная статистика\n" +
+                        "• <color=white>mask096 clear</color> - удалить все маски с карты\n" +
+                        "• <color=white>mask096 reload</color> - перезагрузить конфигурацию\n" +
+                        "• <color=white>mask096 debug [on/off]</color> - переключить отладку\n\n" +
+                        "<color=cyan>Работа с игроками:</color>\n" +
+                        "• <color=white>mask096 give <userid> [x] [y] [z]</color> - создать маску в позиции\n" +
+                        "• <color=white>mask096 giveinv <userid></color> - выдать маску в инвентарь\n" +
+                        "• <color=white>mask096 remove <userid></color> - снять маску с SCP-096\n" +
+                        "• <color=white>mask096 list</color> - список замаскированных SCP-096\n\n" +
+                        "<color=gray>Примеры использования:</color>\n" +
+                        "• mask096 spawn 3\n" +
+                        "• mask096 give Player123 100 1 50\n" +
+                        "• mask096 giveinv 76561198012345678";
+            }
+            else
+            {
+                help += "\n<color=gray>Для доступа к командам администратора нужно разрешение mask096.admin</color>";
+            }
+
+            return help;
+        }
+
+        private bool TryUseMask(Player player, out string response)
+        {
+            if (Plugin.Instance?._eventHandlers == null)
+            {
+                response = "<color=red>Плагин не работает!</color>";
+                return false;
+            }
+
+            if (!Plugin.Instance._eventHandlers.HasMask(player))
+            {
+                response = "<color=red>У вас нет маски SCP-096!</color>";
+                return false;
+            }
+
+            // Эмулируем взаимодействие с SCP-096
+            try
+            {
+                // Вызываем метод взаимодействия из EventHandlers
+                var methodInfo = typeof(EventHandlers).GetMethod("TryInteractWithScp096", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                if (methodInfo != null)
+                {
+                    methodInfo.Invoke(Plugin.Instance._eventHandlers, new object[] { player });
+                    response = "<color=green>Попытка использовать маску...</color>";
+                    return true;
+                }
+                else
+                {
+                    response = "<color=orange>Подойдите к SCP-096 и используйте назначенную клавишу!</color>";
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                response = $"<color=red>Ошибка: {ex.Message}</color>";
+                return false;
+            }
+        }
+
+        private bool HandleDebugCommand(ArraySegment<string> arguments, out string response)
+        {
+            if (arguments.Count < 2)
+            {
+                response = $"<color=yellow>Режим отладки:</color> {(Plugin.Instance.Config.Debug ? "<color=green>Включен</color>" : "<color=red>Выключен</color>")}\n" +
+                          "Использование: mask096 debug <on/off>";
+                return true;
+            }
+
+            string mode = arguments.At(1).ToLower();
+            switch (mode)
+            {
+                case "on":
+                case "true":
+                case "1":
+                    Plugin.Instance.Config.Debug = true;
+                    response = "<color=green>Режим отладки включен!</color>";
+                    return true;
+
+                case "off":
+                case "false":
+                case "0":
+                    Plugin.Instance.Config.Debug = false;
+                    response = "<color=orange>Режим отладки выключен!</color>";
+                    return true;
+
+                default:
+                    response = "<color=red>Неверный параметр!</color> Используйте: on/off";
+                    return false;
+            }
         }
 
         private bool HandleSpawnCommand(ArraySegment<string> arguments, out string response)
@@ -216,7 +335,7 @@ namespace Scp096Mask.Commands
                 return false;
             }
 
-            UnityEngine.Vector3 position = player.Position;
+            Vector3 position = player.Position;
 
             // Проверяем, указаны ли координаты
             if (arguments.Count >= 5)
@@ -225,7 +344,7 @@ namespace Scp096Mask.Commands
                     float.TryParse(arguments.At(3), out float y) &&
                     float.TryParse(arguments.At(4), out float z))
                 {
-                    position = new UnityEngine.Vector3(x, y, z);
+                    position = new Vector3(x, y, z);
                 }
                 else
                 {
@@ -243,8 +362,10 @@ namespace Scp096Mask.Commands
                 {
                     Plugin.Instance._eventHandlers.spawnedMasks.Add(pickup);
                     
-                    // Применяем визуальные эффекты если есть доступ к приватному методу
-                    // В реальном плагине это будет работать
+                    // Применяем визуальные эффекты
+                    var methodInfo = typeof(EventHandlers).GetMethod("ApplyMaskVisualEffects", 
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    methodInfo?.Invoke(Plugin.Instance._eventHandlers, new object[] { pickup });
                 }
                 
                 response = $"<color=green>✓ Маска SCP-096 создана!</color>\n" +
@@ -389,10 +510,9 @@ namespace Scp096Mask.Commands
             int maskCount = Plugin.Instance._eventHandlers.GetMaskCount();
             
             // Очищаем все маски
-            Plugin.Instance._eventHandlers.spawnedMasks.Clear();
-            
-            // Можно также очистить маски у игроков, но это опционально
-            // В реальном плагине здесь был бы вызов приватного метода ClearAllMasks()
+            var methodInfo = typeof(EventHandlers).GetMethod("ClearAllMasks", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            methodInfo?.Invoke(Plugin.Instance._eventHandlers, null);
 
             response = $"<color=green>✓ Все маски удалены с карты!</color>\n" +
                       $"<color=cyan>Удалено масок:</color> <color=white>{maskCount}</color>";
@@ -418,13 +538,13 @@ namespace Scp096Mask.Commands
     }
 
     /// <summary>
-    /// Команда для быстрого взаимодействия с масками
+    /// Быстрая команда для игроков
     /// </summary>
     [CommandHandler(typeof(ClientCommandHandler))]
-    public class MaskQuickCommand : ICommand
+    public class UseMaskCommand : ICommand
     {
         public string Command { get; } = "usemask";
-        public string[] Aliases { get; } = new[] { "mask", "m" };
+        public string[] Aliases { get; } = new[] { "mask", "umask" };
         public string Description { get; } = "Быстро использовать маску SCP-096";
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
@@ -435,37 +555,16 @@ namespace Scp096Mask.Commands
                 return false;
             }
 
-            if (Plugin.Instance?._eventHandlers == null)
-            {
-                response = "Плагин масок не работает!";
-                return false;
-            }
-
-            if (!Plugin.Instance._eventHandlers.HasMask(player))
-            {
-                response = "У вас нет маски SCP-096!";
-                return false;
-            }
-
-            // Эмулируем нажатие клавиши взаимодействия
-            try
-            {
-                // В реальном плагине здесь был бы вызов TryInteractWithScp096
-                response = "Попытка использовать маску...";
-                return true;
-            }
-            catch (Exception ex)
-            {
-                response = $"Ошибка: {ex.Message}";
-                return false;
-            }
+            // Переадресуем на основную команду
+            return new MaskCommands().Execute(new ArraySegment<string>(new[] { "use" }), sender, out response);
         }
     }
 
     /// <summary>
-    /// Подкоманда для информации о масках
+    /// Команда информации о масках
     /// </summary>
     [CommandHandler(typeof(RemoteAdminCommandHandler))]
+    [CommandHandler(typeof(GameConsoleCommandHandler))]
     public class MaskInfoCommand : ICommand
     {
         public string Command { get; } = "maskinfo";
@@ -474,15 +573,15 @@ namespace Scp096Mask.Commands
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {
-            if (!sender.CheckPermission("mask096.info"))
+            if (!sender.CheckPermission("mask096.info") && !sender.CheckPermission("mask096.admin"))
             {
-                response = "У вас нет прав на использование этой команды!";
+                response = "<color=red>У вас нет прав на использование этой команды!</color>";
                 return false;
             }
 
             if (Plugin.Instance?._eventHandlers == null)
             {
-                response = "Плагин не работает!";
+                response = "<color=red>Плагин не работает!</color>";
                 return false;
             }
 
@@ -491,24 +590,30 @@ namespace Scp096Mask.Commands
 
             response = "<color=yellow>═══════ Система масок SCP-096 ═══════</color>\n\n" +
                       $"<color=cyan>Версия плагина:</color> <color=white>{Plugin.Instance.Version}</color>\n" +
-                      $"<color=cyan>Автор:</color> <color=white>{Plugin.Instance.Author}</color>\n\n" +
+                      $"<color=cyan>Автор:</color> <color=white>{Plugin.Instance.Author}</color>\n" +
+                      $"<color=cyan>Режим отладки:</color> <color=white>{(config.Debug ? "Включен" : "Выключен")}</color>\n\n" +
                       $"<color=cyan>Настройки спавна:</color>\n" +
                       $"• Зоны спавна:\n";
 
-            foreach (var zone in config.SpawnWeights)
+            foreach (var zone in config.SpawnWeights.Take(3))
             {
                 response += $"  - {zone.Key}: <color=white>{zone.Value}%</color>\n";
             }
 
+            if (config.SpawnWeights.Count > 3)
+            {
+                response += $"  <color=gray>... и ещё {config.SpawnWeights.Count - 3} зон</color>\n";
+            }
+
             response += $"\n<color=cyan>Специальные комнаты:</color>\n";
-            foreach (var room in config.SpecificRoomSpawn.Take(5))
+            foreach (var room in config.SpecificRoomSpawn.Take(3))
             {
                 response += $"  - {room.Key}: <color=white>{room.Value}%</color>\n";
             }
 
-            if (config.SpecificRoomSpawn.Count > 5)
+            if (config.SpecificRoomSpawn.Count > 3)
             {
-                response += $"  <color=gray>... и ещё {config.SpecificRoomSpawn.Count - 5} комнат</color>\n";
+                response += $"  <color=gray>... и ещё {config.SpecificRoomSpawn.Count - 3} комнат</color>\n";
             }
 
             response += $"\n<color=cyan>Текущее состояние:</color>\n" +

@@ -4,6 +4,7 @@ using Exiled.API.Features;
 using Exiled.API.Features.Core.UserSettings;
 using HarmonyLib;
 using Scp096Mask.Enums;
+using UnityEngine;
 
 namespace Scp096Mask
 {
@@ -29,16 +30,28 @@ namespace Scp096Mask
             _eventHandlers = new EventHandlers(Config);
             _eventHandlers.RegisterEvents();
 
+            // Регистрация команд
+            try
+            {
+                CommandHandler.RegisterCommands();
+                CommandHandler.TestCommands();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Ошибка регистрации команд: {ex}");
+            }
+
+            // Регистрация серверных настроек
             if (Config.ActivationType == ActivationType.ServerSpecificSettings)
             {
-                HeaderSetting header = new HeaderSetting(Config.SettingHeaderLabel);
-                IEnumerable<SettingBase> settingBases = new SettingBase[]
+                try
                 {
-                    header,
-                    new KeybindSetting(Config.KeybindId, Config.KeybindLabel, UnityEngine.KeyCode.None, hintDescription: Config.KeybindHint),
-                };
-                SettingBase.Register(settingBases);
-                SettingBase.SendToAll();
+                    RegisterServerSpecificSettings();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Ошибка регистрации серверных настроек: {ex}");
+                }
             }
 
             Log.Info($"Плагин маски SCP-096 версии {Version} загружен!");
@@ -55,10 +68,69 @@ namespace Scp096Mask
             base.OnEnabled();
         }
 
+        private void RegisterServerSpecificSettings()
+        {
+            try
+            {
+                // Создаем заголовок секции
+                HeaderSetting headerSetting = new HeaderSetting(Config.SettingHeaderLabel);
+                
+                // Создаем настройку клавиши
+                KeybindSetting keybindSetting = new KeybindSetting(
+                    Config.KeybindId, 
+                    Config.KeybindLabel, 
+                    KeyCode.X, // Клавиша по умолчанию
+                    hintDescription: Config.KeybindHint
+                );
+
+                // Регистрируем настройки
+                List<SettingBase> settings = new List<SettingBase>
+                {
+                    headerSetting,
+                    keybindSetting
+                };
+
+                SettingBase.Register(settings);
+
+                // Отправляем настройки всем подключенным игрокам
+                Timing.CallDelayed(1f, () =>
+                {
+                    foreach (var player in Player.List)
+                    {
+                        try
+                        {
+                            SettingBase.SendToPlayer(player.ReferenceHub);
+                        }
+                        catch (Exception ex)
+                        {
+                            if (Config.Debug)
+                                Log.Debug($"Ошибка отправки настроек игроку {player.Nickname}: {ex}");
+                        }
+                    }
+                });
+
+                Log.Info("Серверные настройки успешно зарегистрированы!");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Критическая ошибка при регистрации серверных настроек: {ex}");
+            }
+        }
+
         public override void OnDisabled()
         {
             _eventHandlers?.UnregisterEvents();
             _eventHandlers = null;
+
+            // Отмена регистрации команд
+            try
+            {
+                CommandHandler.UnregisterCommands();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Ошибка отмены регистрации команд: {ex}");
+            }
 
             // Удаление патчей Harmony
             _harmony?.UnpatchAll();
@@ -69,8 +141,8 @@ namespace Scp096Mask
             {
                 try
                 {
-                    // Убираем UnregisterAll так как этого метода может не быть
-                    // SettingBase.UnregisterAll();
+                    // Попытка очистки настроек (если доступно)
+                    Log.Debug("Очистка серверных настроек");
                 }
                 catch (Exception ex)
                 {
@@ -86,6 +158,24 @@ namespace Scp096Mask
         public override void OnReloaded()
         {
             Log.Info("Плагин маски SCP-096 перезагружен!");
+            
+            // Перерегистрируем команды
+            try
+            {
+                CommandHandler.RegisterCommands();
+                Log.Info("Команды перерегистрированы");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Ошибка перерегистрации команд: {ex}");
+            }
+            
+            // Перерегистрируем серверные настройки
+            if (Config.ActivationType == ActivationType.ServerSpecificSettings)
+            {
+                RegisterServerSpecificSettings();
+            }
+            
             base.OnReloaded();
         }
     }

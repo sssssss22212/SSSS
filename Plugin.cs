@@ -78,7 +78,7 @@ namespace Scp096Mask
                 
                 // Создаем настройку клавиши
                 KeybindSetting keybindSetting = new KeybindSetting(
-                    1, // ID клавиши
+                    Config.KeybindId, 
                     Config.KeybindLabel, 
                     KeyCode.X, // Клавиша по умолчанию
                     hintDescription: Config.KeybindHint
@@ -100,7 +100,7 @@ namespace Scp096Mask
                     {
                         try
                         {
-                            SettingBase.SendToPlayer(player);
+                            SettingBase.SendToPlayer(player.ReferenceHub);
                         }
                         catch (Exception ex)
                         {

@@ -262,7 +262,7 @@ namespace Scp096Mask
                         {
                             if (ev.Player != null && ev.Player.IsConnected)
                             {
-                                SettingBase.SendToPlayer(ev.Player);
+                                SettingBase.SendToPlayer(ev.Player.ReferenceHub);
                                 
                                 if (_config.Debug)
                                     Log.Debug($"Серверные настройки отправлены игроку {ev.Player.Nickname}");
@@ -289,7 +289,7 @@ namespace Scp096Mask
                 return;
 
             if (settingBase is SSKeybindSetting keybindSetting && 
-                keybindSetting.SettingId == 1 && 
+                keybindSetting.SettingId.Equals(_config.KeybindId) && 
                 keybindSetting.SyncIsPressed)
             {
                 TryInteractWithScp096(player);
@@ -498,7 +498,7 @@ namespace Scp096Mask
 
                         if (_config.AdvancedSpawn.LogMaskSpawns)
                         {
-                            var parentRoom = Room.FindParentRoom(pickup.GameObject);
+                            var parentRoom = Room.FindParentRoom(position);
                             if (parentRoom != null)
                                 Log.Info($"Маска SCP-096 создана в {parentRoom.Type} ({position})");
                             else
@@ -699,7 +699,7 @@ namespace Scp096Mask
 
                         if (_config.AdvancedSpawn.LogMaskSpawns)
                         {
-                            var parentRoom = Room.FindParentRoom(pickup.GameObject);
+                            var parentRoom = Room.FindParentRoom(position);
                             if (parentRoom != null)
                                 Log.Info($"Респавн маски SCP-096 в {parentRoom.Type}");
                             else

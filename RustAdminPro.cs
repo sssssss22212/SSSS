@@ -298,21 +298,7 @@ namespace Oxide.Plugins
             // Закрываем все открытые UI
             foreach (var player in BasePlayer.activePlayerList)
             {
-                CuiHelper.DestroyUi(player, "AdminPanel");
-                CuiHelper.DestroyUi(player, "AdminPanelBackground");
-                CuiHelper.DestroyUi(player, "ShopPanel");
-                CuiHelper.DestroyUi(player, "ShopBackground");
-                CuiHelper.DestroyUi(player, "KitPanel");
-                CuiHelper.DestroyUi(player, "KitBackground");
-                CuiHelper.DestroyUi(player, "TeleportPanel");
-                CuiHelper.DestroyUi(player, "TeleportBackground");
-                CuiHelper.DestroyUi(player, "WeatherPanel");
-                CuiHelper.DestroyUi(player, "WeatherBackground");
-                CuiHelper.DestroyUi(player, "TimePanel");
-                CuiHelper.DestroyUi(player, "TimeBackground");
-                CuiHelper.DestroyUi(player, "ServerPanel");
-                CuiHelper.DestroyUi(player, "ServerBackground");
-                CuiHelper.DestroyUi(player, "InventoryPanel");
+                CloseAllPanels(player);
             }
         }
 
@@ -722,61 +708,97 @@ namespace Oxide.Plugins
 
         #endregion
 
+        #region UI Helper Methods
+
+        void CloseAllPanels(BasePlayer player)
+        {
+            CuiHelper.DestroyUi(player, "AdminPanel");
+            CuiHelper.DestroyUi(player, "ShopPanel");
+            CuiHelper.DestroyUi(player, "KitPanel");
+            CuiHelper.DestroyUi(player, "TeleportPanel");
+            CuiHelper.DestroyUi(player, "WeatherPanel");
+            CuiHelper.DestroyUi(player, "TimePanel");
+            CuiHelper.DestroyUi(player, "ServerPanel");
+            CuiHelper.DestroyUi(player, "InventoryPanel");
+            CuiHelper.DestroyUi(player, "NotificationPanel");
+        }
+
+        void ShowNotification(BasePlayer player, string message, string color = "#27ae60", float duration = 3f)
+        {
+            CuiHelper.DestroyUi(player, "NotificationPanel");
+            
+            var container = new CuiElementContainer();
+
+            container.Add(new CuiPanel
+            {
+                Image = { Color = HexToRustFormat(color, 0.9f) },
+                RectTransform = { AnchorMin = "0.3 0.85", AnchorMax = "0.7 0.95" },
+                CursorEnabled = false
+            }, "Overlay", "NotificationPanel");
+
+            container.Add(new CuiLabel
+            {
+                Text = { Text = message, FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
+            }, "NotificationPanel");
+
+            CuiHelper.AddUi(player, container);
+            
+            timer.Once(duration, () => CuiHelper.DestroyUi(player, "NotificationPanel"));
+        }
+
+        #endregion
+
         #region UI Creation
 
         void OpenAdminPanel(BasePlayer player)
         {
+            // Сначала закрываем все существующие панели
+            CloseAllPanels(player);
+            
             var container = new CuiElementContainer();
 
-            // Фоновая панель с градиентом
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0 0 0 0.8" },
-                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
-                CursorEnabled = true
-            }, "Overlay", "AdminPanelBackground");
-
-            // Основная панель с красивой рамкой
+            // Основная панель без фонового затемнения
             container.Add(new CuiPanel
             {
                 Image = { Color = HexToRustFormat(config.UI.PrimaryColor, 0.98f) },
                 RectTransform = { AnchorMin = "0.05 0.05", AnchorMax = "0.95 0.95" },
                 CursorEnabled = true
-            }, "AdminPanelBackground", "AdminPanel");
+            }, "Overlay", "AdminPanel");
 
             // Декоративная рамка
             container.Add(new CuiPanel
             {
                 Image = { Color = HexToRustFormat(config.UI.AccentColor, 0.6f) },
                 RectTransform = { AnchorMin = "0 0", AnchorMax = "1 0.005" }
-            }, "AdminPanel", "TopBorder");
+            }, "AdminPanel");
 
             container.Add(new CuiPanel
             {
                 Image = { Color = HexToRustFormat(config.UI.AccentColor, 0.6f) },
                 RectTransform = { AnchorMin = "0 0.995", AnchorMax = "1 1" }
-            }, "AdminPanel", "BottomBorder");
+            }, "AdminPanel");
 
             // Заголовок с градиентом
             container.Add(new CuiPanel
             {
                 Image = { Color = HexToRustFormat(config.UI.SecondaryColor, 0.9f) },
                 RectTransform = { AnchorMin = "0 0.9", AnchorMax = "1 1" }
-            }, "AdminPanel", "HeaderPanel");
+            }, "AdminPanel", "AdminHeader");
 
             container.Add(new CuiLabel
             {
                 Text = { Text = "🛡️ RUST ADMIN PRO - ПАНЕЛЬ УПРАВЛЕНИЯ 🛡️", FontSize = 20, Align = TextAnchor.MiddleCenter, Color = HexToRustFormat(config.UI.TextColor) },
                 RectTransform = { AnchorMin = "0 0", AnchorMax = "0.9 1" }
-            }, "HeaderPanel");
+            }, "AdminHeader");
 
             // Кнопка закрытия с эффектом
             container.Add(new CuiButton
             {
-                Button = { Command = "adminpanel.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
+                Button = { Command = "ui.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
                 RectTransform = { AnchorMin = "0.92 0.02", AnchorMax = "0.98 0.08" },
                 Text = { Text = "✕", FontSize = 18, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
-            }, "HeaderPanel");
+            }, "AdminHeader");
 
             // Информационная панель
             var playerData = GetPlayerData(player.userID);
@@ -907,25 +929,19 @@ namespace Oxide.Plugins
             }
         }
 
-        void OpenShopPanel(BasePlayer player)
+        void OpenShopPanel(BasePlayer player, string category = "")
         {
+            CloseAllPanels(player);
+            
             var container = new CuiElementContainer();
 
-            // Фоновая панель
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0 0 0 0.85" },
-                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
-                CursorEnabled = true
-            }, "Overlay", "ShopBackground");
-
-            // Основная панель магазина с улучшенным дизайном
+            // Основная панель магазина без фонового затемнения
             container.Add(new CuiPanel
             {
                 Image = { Color = HexToRustFormat(config.UI.PrimaryColor, 0.98f) },
                 RectTransform = { AnchorMin = "0.1 0.05", AnchorMax = "0.9 0.95" },
                 CursorEnabled = true
-            }, "ShopBackground", "ShopPanel");
+            }, "Overlay", "ShopPanel");
 
             // Декоративные рамки
             container.Add(new CuiPanel
@@ -960,34 +976,60 @@ namespace Oxide.Plugins
                 RectTransform = { AnchorMin = "0 0", AnchorMax = "0.85 0.3" }
             }, "ShopHeader");
 
+            // Кнопка "Назад"
+            container.Add(new CuiButton
+            {
+                Button = { Command = "adminpanel.section players", Color = HexToRustFormat(config.UI.InfoColor, 0.8f) },
+                RectTransform = { AnchorMin = "0.85 0.02", AnchorMax = "0.91 0.08" },
+                Text = { Text = "⬅", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
+            }, "ShopHeader");
+
             // Кнопка закрытия
             container.Add(new CuiButton
             {
-                Button = { Command = "shop.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
+                Button = { Command = "ui.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
                 RectTransform = { AnchorMin = "0.92 0.02", AnchorMax = "0.98 0.08" },
                 Text = { Text = "✕", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
             }, "ShopHeader");
 
             // Категории товаров с иконками
             var categories = config.Shop.Items.Select(x => x.Category).Distinct().ToList();
-            string[] categoryIcons = { "⚔️", "🛡️", "💊", "🔧", "🏠" };
-            
-            for (int i = 0; i < categories.Count && i < 5; i++)
+            var categoryData = new Dictionary<string, string>
             {
-                float xMin = 0.02f + (i * 0.19f);
+                ["Оружие"] = "⚔️",
+                ["Броня"] = "🛡️", 
+                ["Медицина"] = "💊",
+                ["Инструменты"] = "🔧",
+                ["Ресурсы"] = "🏗️"
+            };
+
+            // Кнопка "Все товары"
+            container.Add(new CuiButton
+            {
+                Button = { Command = "shop.category all", Color = string.IsNullOrEmpty(category) ? HexToRustFormat(config.UI.SuccessColor, 0.8f) : HexToRustFormat(config.UI.ButtonColor, 0.7f) },
+                RectTransform = { AnchorMin = "0.02 0.82", AnchorMax = "0.18 0.88" },
+                Text = { Text = "📦 Все товары", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = HexToRustFormat(config.UI.TextColor) }
+            }, "ShopPanel");
+            
+            for (int i = 0; i < categories.Count && i < 4; i++)
+            {
+                float xMin = 0.2f + (i * 0.19f);
                 float xMax = xMin + 0.18f;
-                string icon = i < categoryIcons.Length ? categoryIcons[i] : "📦";
+                string icon = categoryData.ContainsKey(categories[i]) ? categoryData[categories[i]] : "📦";
+                bool isSelected = category == categories[i];
 
                 container.Add(new CuiButton
                 {
-                    Button = { Command = $"shop.category {categories[i]}", Color = HexToRustFormat(config.UI.ButtonColor, 0.7f) },
+                    Button = { Command = $"shop.category {categories[i]}", Color = isSelected ? HexToRustFormat(config.UI.SuccessColor, 0.8f) : HexToRustFormat(config.UI.ButtonColor, 0.7f) },
                     RectTransform = { AnchorMin = $"{xMin} 0.82", AnchorMax = $"{xMax} 0.88" },
-                    Text = { Text = $"{icon} {categories[i]}", FontSize = 11, Align = TextAnchor.MiddleCenter, Color = HexToRustFormat(config.UI.TextColor) }
+                    Text = { Text = $"{icon} {categories[i]}", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = HexToRustFormat(config.UI.TextColor) }
                 }, "ShopPanel");
             }
 
-            // Товары с улучшенным дизайном
-            var items = config.Shop.Items.Take(15).ToList();
+            // Фильтруем товары по категории
+            var items = string.IsNullOrEmpty(category) || category == "all" 
+                ? config.Shop.Items.Take(15).ToList()
+                : config.Shop.Items.Where(x => x.Category == category).Take(15).ToList();
             for (int i = 0; i < items.Count; i++)
             {
                 int row = i / 5;
@@ -1059,23 +1101,17 @@ namespace Oxide.Plugins
 
         void OpenKitMenu(BasePlayer player)
         {
+            CloseAllPanels(player);
+            
             var container = new CuiElementContainer();
 
-            // Фоновая панель
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0 0 0 0.85" },
-                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
-                CursorEnabled = true
-            }, "Overlay", "KitBackground");
-
-            // Основная панель с красивым дизайном
+            // Основная панель без фонового затемнения
             container.Add(new CuiPanel
             {
                 Image = { Color = HexToRustFormat(config.UI.PrimaryColor, 0.98f) },
                 RectTransform = { AnchorMin = "0.15 0.1", AnchorMax = "0.85 0.9" },
                 CursorEnabled = true
-            }, "KitBackground", "KitPanel");
+            }, "Overlay", "KitPanel");
 
             // Декоративные элементы
             container.Add(new CuiPanel
@@ -1097,10 +1133,18 @@ namespace Oxide.Plugins
                 RectTransform = { AnchorMin = "0 0", AnchorMax = "0.9 1" }
             }, "KitHeader");
 
+            // Кнопка "Назад"
+            container.Add(new CuiButton
+            {
+                Button = { Command = "adminpanel.section players", Color = HexToRustFormat(config.UI.InfoColor, 0.8f) },
+                RectTransform = { AnchorMin = "0.85 0.02", AnchorMax = "0.91 0.08" },
+                Text = { Text = "⬅", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
+            }, "KitHeader");
+
             // Кнопка закрытия
             container.Add(new CuiButton
             {
-                Button = { Command = "kit.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
+                Button = { Command = "ui.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
                 RectTransform = { AnchorMin = "0.92 0.02", AnchorMax = "0.98 0.08" },
                 Text = { Text = "✕", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
             }, "KitHeader");
@@ -1183,23 +1227,17 @@ namespace Oxide.Plugins
 
         void OpenTeleportMenu(BasePlayer player)
         {
+            CloseAllPanels(player);
+            
             var container = new CuiElementContainer();
 
-            // Фоновая панель
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0 0 0 0.85" },
-                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
-                CursorEnabled = true
-            }, "Overlay", "TeleportBackground");
-
-            // Основная панель
+            // Основная панель без фонового затемнения
             container.Add(new CuiPanel
             {
                 Image = { Color = HexToRustFormat(config.UI.PrimaryColor, 0.98f) },
                 RectTransform = { AnchorMin = "0.25 0.15", AnchorMax = "0.75 0.85" },
                 CursorEnabled = true
-            }, "TeleportBackground", "TeleportPanel");
+            }, "Overlay", "TeleportPanel");
 
             // Декоративная рамка
             container.Add(new CuiPanel
@@ -1223,7 +1261,7 @@ namespace Oxide.Plugins
 
             container.Add(new CuiButton
             {
-                Button = { Command = "teleport.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
+                Button = { Command = "ui.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
                 RectTransform = { AnchorMin = "0.9 0.02", AnchorMax = "0.98 0.08" },
                 Text = { Text = "✕", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
             }, "TeleportHeader");
@@ -1256,23 +1294,17 @@ namespace Oxide.Plugins
 
         void OpenWeatherPanel(BasePlayer player)
         {
+            CloseAllPanels(player);
+            
             var container = new CuiElementContainer();
 
-            // Фоновая панель
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0 0 0 0.85" },
-                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
-                CursorEnabled = true
-            }, "Overlay", "WeatherBackground");
-
-            // Основная панель
+            // Основная панель без фонового затемнения
             container.Add(new CuiPanel
             {
                 Image = { Color = HexToRustFormat(config.UI.PrimaryColor, 0.98f) },
                 RectTransform = { AnchorMin = "0.3 0.2", AnchorMax = "0.7 0.8" },
                 CursorEnabled = true
-            }, "WeatherBackground", "WeatherPanel");
+            }, "Overlay", "WeatherPanel");
 
             // Заголовок
             container.Add(new CuiPanel
@@ -1289,7 +1321,7 @@ namespace Oxide.Plugins
 
             container.Add(new CuiButton
             {
-                Button = { Command = "weather.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
+                Button = { Command = "ui.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
                 RectTransform = { AnchorMin = "0.9 0.02", AnchorMax = "0.98 0.08" },
                 Text = { Text = "✕", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
             }, "WeatherHeader");
@@ -1316,23 +1348,17 @@ namespace Oxide.Plugins
 
         void OpenTimePanel(BasePlayer player)
         {
+            CloseAllPanels(player);
+            
             var container = new CuiElementContainer();
 
-            // Фоновая панель
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0 0 0 0.85" },
-                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
-                CursorEnabled = true
-            }, "Overlay", "TimeBackground");
-
-            // Основная панель
+            // Основная панель без фонового затемнения
             container.Add(new CuiPanel
             {
                 Image = { Color = HexToRustFormat(config.UI.PrimaryColor, 0.98f) },
                 RectTransform = { AnchorMin = "0.3 0.2", AnchorMax = "0.7 0.8" },
                 CursorEnabled = true
-            }, "TimeBackground", "TimePanel");
+            }, "Overlay", "TimePanel");
 
             // Заголовок
             container.Add(new CuiPanel
@@ -1349,7 +1375,7 @@ namespace Oxide.Plugins
 
             container.Add(new CuiButton
             {
-                Button = { Command = "time.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
+                Button = { Command = "ui.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
                 RectTransform = { AnchorMin = "0.9 0.02", AnchorMax = "0.98 0.08" },
                 Text = { Text = "✕", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
             }, "TimeHeader");
@@ -1376,23 +1402,17 @@ namespace Oxide.Plugins
 
         void OpenServerPanel(BasePlayer player)
         {
+            CloseAllPanels(player);
+            
             var container = new CuiElementContainer();
 
-            // Фоновая панель
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0 0 0 0.85" },
-                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
-                CursorEnabled = true
-            }, "Overlay", "ServerBackground");
-
-            // Основная панель
+            // Основная панель без фонового затемнения
             container.Add(new CuiPanel
             {
                 Image = { Color = HexToRustFormat(config.UI.PrimaryColor, 0.98f) },
                 RectTransform = { AnchorMin = "0.25 0.15", AnchorMax = "0.75 0.85" },
                 CursorEnabled = true
-            }, "ServerBackground", "ServerPanel");
+            }, "Overlay", "ServerPanel");
 
             // Заголовок
             container.Add(new CuiPanel
@@ -1409,7 +1429,7 @@ namespace Oxide.Plugins
 
             container.Add(new CuiButton
             {
-                Button = { Command = "server.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
+                Button = { Command = "ui.close", Color = HexToRustFormat(config.UI.DangerColor, 0.8f) },
                 RectTransform = { AnchorMin = "0.9 0.02", AnchorMax = "0.98 0.08" },
                 Text = { Text = "✕", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
             }, "ServerHeader");
@@ -1440,14 +1460,13 @@ namespace Oxide.Plugins
 
         #region Console Commands
 
-        [ConsoleCommand("adminpanel.close")]
-        void CloseAdminPanel(ConsoleSystem.Arg arg)
+        [ConsoleCommand("ui.close")]
+        void CloseUI(ConsoleSystem.Arg arg)
         {
             var player = arg.Player();
             if (player == null) return;
 
-            CuiHelper.DestroyUi(player, "AdminPanel");
-            CuiHelper.DestroyUi(player, "AdminPanelBackground");
+            CloseAllPanels(player);
         }
 
         [ConsoleCommand("adminpanel.player")]
@@ -1518,14 +1537,16 @@ namespace Oxide.Plugins
             });
         }
 
-        [ConsoleCommand("shop.close")]
-        void CloseShop(ConsoleSystem.Arg arg)
+        [ConsoleCommand("shop.category")]
+        void ShopCategory(ConsoleSystem.Arg arg)
         {
             var player = arg.Player();
             if (player == null) return;
 
-            CuiHelper.DestroyUi(player, "ShopPanel");
-            CuiHelper.DestroyUi(player, "ShopBackground");
+            string category = arg.Args?[0];
+            if (category == "all") category = "";
+            
+            OpenShopPanel(player, category);
         }
 
         [ConsoleCommand("shop.buy")]
@@ -1548,6 +1569,7 @@ namespace Oxide.Plugins
             if (playerData.Balance < item.Price)
             {
                 SendReply(player, $"{config.ChatPrefix} Недостаточно средств! Нужно: {item.Price} {config.Shop.Currency}");
+                ShowNotification(player, $"❌ Недостаточно средств!", config.UI.DangerColor);
                 return;
             }
 
@@ -1567,21 +1589,13 @@ namespace Oxide.Plugins
             // Списываем средства
             playerData.Balance -= item.Price;
             SendReply(player, $"{config.ChatPrefix} Вы купили <color=#27ae60>{item.Name}</color> за {item.Price} {config.Shop.Currency}!");
+            ShowNotification(player, $"✅ Куплено: {item.Name}", config.UI.SuccessColor);
             
             // Обновляем UI магазина
-            CuiHelper.DestroyUi(player, "ShopPanel");
             timer.Once(0.1f, () => OpenShopPanel(player));
         }
 
-        [ConsoleCommand("kit.close")]
-        void CloseKitMenu(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null) return;
 
-            CuiHelper.DestroyUi(player, "KitPanel");
-            CuiHelper.DestroyUi(player, "KitBackground");
-        }
 
         [ConsoleCommand("kit.give")]
         void GiveKitFromUI(ConsoleSystem.Arg arg)
@@ -1593,18 +1607,10 @@ namespace Oxide.Plugins
             if (string.IsNullOrEmpty(kitName)) return;
 
             GiveKit(player, kitName);
-            CuiHelper.DestroyUi(player, "KitPanel");
+            CloseAllPanels(player);
         }
 
-        [ConsoleCommand("teleport.close")]
-        void CloseTeleportMenu(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null) return;
 
-            CuiHelper.DestroyUi(player, "TeleportPanel");
-            CuiHelper.DestroyUi(player, "TeleportBackground");
-        }
 
         [ConsoleCommand("teleport.location")]
         void TeleportToLocation(ConsoleSystem.Arg arg)
@@ -1620,8 +1626,8 @@ namespace Oxide.Plugins
             {
                 player.Teleport(position);
                 SendReply(player, $"{config.ChatPrefix} 🌍 Телепорт в: {locationName}");
-                CuiHelper.DestroyUi(player, "TeleportPanel");
-                CuiHelper.DestroyUi(player, "TeleportBackground");
+                ShowNotification(player, $"🌍 Телепорт: {locationName}", config.UI.InfoColor);
+                CloseAllPanels(player);
                 
                 // Уведомляем администраторов
                 foreach (var admin in BasePlayer.activePlayerList)
@@ -1638,15 +1644,7 @@ namespace Oxide.Plugins
             }
         }
 
-        [ConsoleCommand("weather.close")]
-        void CloseWeatherPanel(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null) return;
 
-            CuiHelper.DestroyUi(player, "WeatherPanel");
-            CuiHelper.DestroyUi(player, "WeatherBackground");
-        }
 
         [ConsoleCommand("weather.set")]
         void SetWeatherFromUI(ConsoleSystem.Arg arg)
@@ -1658,19 +1656,10 @@ namespace Oxide.Plugins
             if (string.IsNullOrEmpty(weatherType)) return;
 
             WeatherCommand(player, "weather", new[] { weatherType });
-            CuiHelper.DestroyUi(player, "WeatherPanel");
-            CuiHelper.DestroyUi(player, "WeatherBackground");
+            CloseAllPanels(player);
         }
 
-        [ConsoleCommand("time.close")]
-        void CloseTimePanel(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null) return;
 
-            CuiHelper.DestroyUi(player, "TimePanel");
-            CuiHelper.DestroyUi(player, "TimeBackground");
-        }
 
         [ConsoleCommand("time.set")]
         void SetTimeFromUI(ConsoleSystem.Arg arg)
@@ -1682,19 +1671,10 @@ namespace Oxide.Plugins
             if (string.IsNullOrEmpty(time)) return;
 
             TimeCommand(player, "time", new[] { time });
-            CuiHelper.DestroyUi(player, "TimePanel");
-            CuiHelper.DestroyUi(player, "TimeBackground");
+            CloseAllPanels(player);
         }
 
-        [ConsoleCommand("server.close")]
-        void CloseServerPanel(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null) return;
 
-            CuiHelper.DestroyUi(player, "ServerPanel");
-            CuiHelper.DestroyUi(player, "ServerBackground");
-        }
 
         [ConsoleCommand("server.action")]
         void ServerActionFromUI(ConsoleSystem.Arg arg)
@@ -1723,8 +1703,7 @@ namespace Oxide.Plugins
                     break;
             }
 
-            CuiHelper.DestroyUi(player, "ServerPanel");
-            CuiHelper.DestroyUi(player, "ServerBackground");
+            CloseAllPanels(player);
         }
 
         #endregion
@@ -1861,6 +1840,7 @@ namespace Oxide.Plugins
 
             SendReply(player, $"{config.ChatPrefix} ✅ Вы получили кит: <color=#27ae60>{kit.Name}</color>");
             SendReply(player, $"{config.ChatPrefix} 📦 Выдано предметов: <color=#3498db>{itemsGiven}</color>");
+            ShowNotification(player, $"📦 Получен кит: {kit.Name}", config.UI.SuccessColor);
             
             // Уведомляем администраторов о получении кита
             foreach (var admin in BasePlayer.activePlayerList)
@@ -2322,6 +2302,8 @@ namespace Oxide.Plugins
 
         void ShowPlayerInventory(BasePlayer viewer, BasePlayer target)
         {
+            CloseAllPanels(viewer);
+            
             var container = new CuiElementContainer();
 
             container.Add(new CuiPanel
@@ -2339,7 +2321,7 @@ namespace Oxide.Plugins
 
             container.Add(new CuiButton
             {
-                Button = { Command = "inventory.close", Color = HexToRustFormat(config.UI.DangerColor) },
+                Button = { Command = "ui.close", Color = HexToRustFormat(config.UI.DangerColor) },
                 RectTransform = { AnchorMin = "0.92 0.92", AnchorMax = "0.98 0.98" },
                 Text = { Text = "✕", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
             }, "InventoryPanel");
@@ -2382,14 +2364,7 @@ namespace Oxide.Plugins
             CuiHelper.AddUi(viewer, container);
         }
 
-        [ConsoleCommand("inventory.close")]
-        void CloseInventoryPanel(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null) return;
 
-            CuiHelper.DestroyUi(player, "InventoryPanel");
-        }
 
         #endregion
 

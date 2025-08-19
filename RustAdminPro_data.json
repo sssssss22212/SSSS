@@ -1,0 +1,36 @@
+{
+  "Players": {},
+  "TeleportLocations": [
+    {
+      "Name": "Спавн",
+      "Position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "IsPublic": true,
+      "OwnerId": 0
+    },
+    {
+      "Name": "Банк",
+      "Position": {
+        "x": 100.0,
+        "y": 0.0,
+        "z": 100.0
+      },
+      "IsPublic": true,
+      "OwnerId": 0
+    },
+    {
+      "Name": "Магазин",
+      "Position": {
+        "x": -100.0,
+        "y": 0.0,
+        "z": -100.0
+      },
+      "IsPublic": true,
+      "OwnerId": 0
+    }
+  ],
+  "Kits": []
+}

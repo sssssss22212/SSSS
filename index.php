@@ -5,15 +5,75 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 
-$users_file = 'users.json';
-$news_file = 'news.json';
-
-if (!file_exists($users_file)) {
-    file_put_contents($users_file, json_encode([]));
+$DATA_DIR = __DIR__ . '/data';
+if (!is_dir($DATA_DIR)) {
+    mkdir($DATA_DIR, 0775, true);
 }
 
-if (!file_exists($news_file)) {
-    file_put_contents($news_file, json_encode([]));
+$users_file = $DATA_DIR . '/users.json';
+$news_file = $DATA_DIR . '/news.json';
+$sessions_file = $DATA_DIR . '/sessions.json';
+$transactions_file = $DATA_DIR . '/transactions.json';
+$roulette_file = $DATA_DIR . '/roulette.json';
+$mines_file = $DATA_DIR . '/mines.json';
+$slots_file = $DATA_DIR . '/slots.json';
+$coinflip_file = $DATA_DIR . '/coinflip.json';
+
+$defaultFiles = [
+    $users_file => [],
+    $news_file => [],
+    $sessions_file => [],
+    $transactions_file => [],
+    $roulette_file => [],
+    $mines_file => [],
+    $slots_file => [],
+    $coinflip_file => []
+];
+
+foreach ($defaultFiles as $path => $default) {
+    if (!file_exists($path)) {
+        file_put_contents($path, json_encode($default, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    }
+}
+
+// Seed default admin if none exists
+$__users_seed = readJson($users_file);
+$__has_admin = false;
+foreach ($__users_seed as $__u) { if (($__u['role'] ?? '') === 'admin') { $__has_admin = true; break; } }
+if (!$__has_admin) {
+    $admin_id = generateUserId();
+    $__users_seed[$admin_id] = [
+        'id' => $admin_id,
+        'name' => 'Admin',
+        'email' => 'admin@steamtime',
+        'password' => hashPassword('admin123'),
+        'role' => 'admin',
+        'registration_date' => date('d.m.Y H:i:s'),
+        'steam_id' => null,
+        'avatar' => null,
+        'avatar_medium' => null,
+        'avatar_full' => null,
+        'balance' => 0.0
+    ];
+    atomicJsonWrite($users_file, $__users_seed);
+}
+
+function atomicJsonWrite($path, $data) {
+    $temp = tempnam(sys_get_temp_dir(), 'json_');
+    $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    file_put_contents($temp, $json);
+    @chmod($temp, 0664);
+    if (!@rename($temp, $path)) {
+        @unlink($temp);
+        file_put_contents($path, $json, LOCK_EX);
+    }
+}
+
+function readJson($path) {
+    if (!file_exists($path)) return [];
+    $content = file_get_contents($path);
+    $data = json_decode($content, true);
+    return is_array($data) ? $data : [];
 }
 
 function loadUsers() {
@@ -23,7 +83,7 @@ function loadUsers() {
 
 function saveUsers($users) {
     global $users_file;
-    file_put_contents($users_file, json_encode($users, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    atomicJsonWrite($users_file, $users);
 }
 
 function loadNews() {
@@ -33,7 +93,7 @@ function loadNews() {
 
 function saveNews($news) {
     global $news_file;
-    file_put_contents($news_file, json_encode($news, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    atomicJsonWrite($news_file, $news);
 }
 
 function generateUserId() {
@@ -462,6 +522,388 @@ if (isset($_GET['openid_mode'])) {
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // API router for JSON endpoints
+    if (isset($_POST['api'])) {
+        header('Content-Type: application/json; charset=utf-8');
+        $action = $_POST['api'];
+
+        // Helpers inside API scope
+        $respond = function($ok, $payload = [], $status = 200) {
+            http_response_code($status);
+            echo json_encode(['ok' => $ok] + $payload, JSON_UNESCAPED_UNICODE);
+            exit;
+        };
+        $requireAuth = function() use ($respond) {
+            if (!isset($_SESSION['user'])) {
+                $respond(false, ['error' => 'auth_required'], 401);
+            }
+        };
+
+        $users = loadUsers();
+        $sessions = readJson($sessions_file);
+        $transactions = readJson($transactions_file);
+
+        // Update session heartbeat
+        $touchSession = function() use (&$sessions) {
+            $sid = session_id();
+            $sessions[$sid] = [
+                'user_id' => $_SESSION['user']['id'] ?? null,
+                'time' => time(),
+                'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'ua' => $_SERVER['HTTP_USER_AGENT'] ?? null
+            ];
+        };
+
+        switch ($action) {
+            case 'heartbeat':
+                $thisUserId = $_SESSION['user']['id'] ?? null;
+                if ($thisUserId) $touchSession();
+                atomicJsonWrite($sessions_file, $sessions);
+                // count online (active within last 60s)
+                $now = time();
+                $online = 0;
+                foreach ($sessions as $s) {
+                    if (($now - ($s['time'] ?? 0)) <= 60) $online++;
+                }
+                $balance = $thisUserId && isset($users[$thisUserId]) ? ($users[$thisUserId]['balance'] ?? 0) : 0;
+                $respond(true, ['online' => $online, 'balance' => $balance]);
+            case 'balance_topup':
+                $requireAuth();
+                $amount = floatval($_POST['amount'] ?? 0);
+                if ($amount <= 0) $respond(false, ['error' => 'invalid_amount'], 400);
+                $uid = $_SESSION['user']['id'];
+                $users[$uid]['balance'] = floatval($users[$uid]['balance'] ?? 0) + $amount;
+                $tx = [
+                    'id' => uniqid('tx_', true),
+                    'user_id' => $uid,
+                    'type' => 'topup',
+                    'amount' => $amount,
+                    'time' => date('c')
+                ];
+                $transactions[] = $tx;
+                saveUsers($users);
+                atomicJsonWrite($transactions_file, $transactions);
+                $_SESSION['user'] = $users[$uid];
+                $respond(true, ['balance' => $users[$uid]['balance'], 'tx' => $tx]);
+            case 'balance_get':
+                $requireAuth();
+                $uid = $_SESSION['user']['id'];
+                $respond(true, ['balance' => floatval($users[$uid]['balance'] ?? 0)]);
+            case 'transactions_list':
+                $requireAuth();
+                $uid = $_SESSION['user']['id'];
+                $list = array_values(array_filter($transactions, function($t) use ($uid) { return $t['user_id'] === $uid; }));
+                usort($list, function($a, $b) { return strcmp($b['time'], $a['time']); });
+                $respond(true, ['transactions' => $list]);
+
+            // Game endpoints (stubs to be expanded)
+            case 'roulette_spin':
+                $requireAuth();
+                $uid = $_SESSION['user']['id'];
+                $bet = floatval($_POST['bet'] ?? 0);
+                $kind = $_POST['kind'] ?? 'red'; // red/black/odd/even/number
+                $numberPick = isset($_POST['number']) ? intval($_POST['number']) : null;
+                if ($bet <= 0) $respond(false, ['error' => 'invalid_bet'], 400);
+                if (($users[$uid]['balance'] ?? 0) < $bet) $respond(false, ['error' => 'insufficient_funds'], 400);
+                $users[$uid]['balance'] = floatval($users[$uid]['balance'] ?? 0) - $bet; // deduct bet
+                $transactions[] = [
+                    'id' => uniqid('tx_', true),
+                    'user_id' => $uid,
+                    'type' => 'bet_roulette',
+                    'amount' => -$bet,
+                    'time' => date('c')
+                ];
+                $resultNumber = rand(0,36);
+                $color = $resultNumber === 0 ? 'green' : (in_array($resultNumber, [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]) ? 'red' : 'black');
+                $payout = 0;
+                if ($kind === 'number' && $numberPick !== null && $numberPick >=0 && $numberPick <=36) {
+                    if ($numberPick === $resultNumber) $payout = $bet * 36;
+                } elseif ($kind === 'red' || $kind === 'black') {
+                    if ($color === $kind) $payout = $bet * 2;
+                } elseif ($kind === 'odd' || $kind === 'even') {
+                    if ($resultNumber !== 0 && ($resultNumber % 2 === 0 ? 'even' : 'odd') === $kind) $payout = $bet * 2;
+                }
+                if ($payout > 0) {
+                    $users[$uid]['balance'] = floatval($users[$uid]['balance']) + $payout;
+                    $transactions[] = [
+                        'id' => uniqid('tx_', true),
+                        'user_id' => $uid,
+                        'type' => 'win_roulette',
+                        'amount' => $payout,
+                        'time' => date('c')
+                    ];
+                }
+                $spin = [
+                    'id' => uniqid('rou_', true),
+                    'user_id' => $uid,
+                    'bet' => $bet,
+                    'kind' => $kind,
+                    'number_pick' => $numberPick,
+                    'result' => $resultNumber,
+                    'color' => $color,
+                    'payout' => $payout,
+                    'time' => date('c')
+                ];
+                $rou = readJson($roulette_file);
+                $rou[] = $spin;
+                saveUsers($users);
+                atomicJsonWrite($roulette_file, $rou);
+                atomicJsonWrite($transactions_file, $transactions);
+                $_SESSION['user'] = $users[$uid];
+                $respond(true, ['result' => $resultNumber, 'color' => $color, 'balance' => $users[$uid]['balance'], 'spin' => $spin]);
+            case 'coinflip_flip':
+                $requireAuth();
+                $uid = $_SESSION['user']['id'];
+                $bet = floatval($_POST['bet'] ?? 0);
+                $side = $_POST['side'] ?? 'heads';
+                if ($bet <= 0) $respond(false, ['error' => 'invalid_bet'], 400);
+                if (($users[$uid]['balance'] ?? 0) < $bet) $respond(false, ['error' => 'insufficient_funds'], 400);
+                $users[$uid]['balance'] = floatval($users[$uid]['balance'] ?? 0) - $bet; // deduct bet
+                $transactions[] = [
+                    'id' => uniqid('tx_', true),
+                    'user_id' => $uid,
+                    'type' => 'bet_coinflip',
+                    'amount' => -$bet,
+                    'time' => date('c')
+                ];
+                $isHeads = (bool)random_int(0,1);
+                $won = (($side === 'heads') && $isHeads) || (($side === 'tails') && !$isHeads);
+                $payout = $won ? $bet * 2 : 0;
+                if ($payout > 0) {
+                    $users[$uid]['balance'] = floatval($users[$uid]['balance']) + $payout;
+                    $transactions[] = [
+                        'id' => uniqid('tx_', true),
+                        'user_id' => $uid,
+                        'type' => 'win_coinflip',
+                        'amount' => $payout,
+                        'time' => date('c')
+                    ];
+                }
+                $delta = $payout - $bet;
+                $flip = [
+                    'id' => uniqid('cf_', true),
+                    'user_id' => $uid,
+                    'bet' => $bet,
+                    'side' => $side,
+                    'result' => $isHeads ? 'heads' : 'tails',
+                    'payout' => $payout,
+                    'time' => date('c')
+                ];
+                $cf = readJson($coinflip_file);
+                $cf[] = $flip;
+                saveUsers($users);
+                atomicJsonWrite($coinflip_file, $cf);
+                atomicJsonWrite($transactions_file, $transactions);
+                $_SESSION['user'] = $users[$uid];
+                $respond(true, ['result' => $flip['result'], 'balance' => $users[$uid]['balance'], 'flip' => $flip]);
+            case 'mines_start':
+                $requireAuth();
+                $uid = $_SESSION['user']['id'];
+                $bet = floatval($_POST['bet'] ?? 0);
+                $minesCount = intval($_POST['mines'] ?? 5);
+                $rows = intval($_POST['rows'] ?? 5);
+                $cols = intval($_POST['cols'] ?? 5);
+                if ($rows < 2) $rows = 5; if ($cols < 2) $cols = 5;
+                $cells = $rows * $cols;
+                if ($minesCount < 1) $minesCount = 5;
+                if ($minesCount >= $cells) $minesCount = max(1, $cells - 1);
+                if ($bet <= 0) $respond(false, ['error' => 'invalid_bet'], 400);
+                if (($users[$uid]['balance'] ?? 0) < $bet) $respond(false, ['error' => 'insufficient_funds'], 400);
+                $users[$uid]['balance'] = floatval($users[$uid]['balance'] ?? 0) - $bet;
+                $transactions[] = [
+                    'id' => uniqid('tx_', true),
+                    'user_id' => $uid,
+                    'type' => 'bet_mines',
+                    'amount' => -$bet,
+                    'time' => date('c')
+                ];
+                $indexes = range(0, $cells - 1);
+                shuffle($indexes);
+                $bombs = array_slice($indexes, 0, $minesCount);
+                sort($bombs);
+                $game = [
+                    'id' => uniqid('min_', true),
+                    'user_id' => $uid,
+                    'bet' => $bet,
+                    'rows' => $rows,
+                    'cols' => $cols,
+                    'mines' => $minesCount,
+                    'bombs' => $bombs,
+                    'revealed' => [],
+                    'status' => 'active',
+                    'started' => date('c')
+                ];
+                $mines = readJson($mines_file);
+                $mines[$game['id']] = $game;
+                saveUsers($users);
+                atomicJsonWrite($transactions_file, $transactions);
+                atomicJsonWrite($mines_file, $mines);
+                $_SESSION['user'] = $users[$uid];
+                $respond(true, ['game' => $game]);
+            case 'mines_pick':
+                $requireAuth();
+                $uid = $_SESSION['user']['id'];
+                $gameId = $_POST['game_id'] ?? '';
+                $index = intval($_POST['index'] ?? -1);
+                $mines = readJson($mines_file);
+                if (!$gameId || !isset($mines[$gameId])) $respond(false, ['error' => 'game_not_found'], 404);
+                $game = $mines[$gameId];
+                if ($game['user_id'] !== $uid) $respond(false, ['error' => 'forbidden'], 403);
+                if ($game['status'] !== 'active') $respond(false, ['error' => 'not_active'], 400);
+                $cells = $game['rows'] * $game['cols'];
+                if ($index < 0 || $index >= $cells) $respond(false, ['error' => 'bad_index'], 400);
+                if (in_array($index, $game['revealed'])) $respond(false, ['error' => 'already_revealed'], 400);
+                if (in_array($index, $game['bombs'])) {
+                    $game['status'] = 'busted';
+                    $mines[$gameId] = $game;
+                    atomicJsonWrite($mines_file, $mines);
+                    $respond(true, ['bust' => true, 'game' => $game]);
+                }
+                $game['revealed'][] = $index;
+                // compute fair multiplier
+                $s = count($game['revealed']);
+                $cells = $game['rows'] * $game['cols'];
+                $safeTotal = $cells - $game['mines'];
+                $prob = 1.0;
+                for ($i = 0; $i < $s; $i++) {
+                    $prob *= ($safeTotal - $i) / ($cells - $i);
+                }
+                $mult = $prob > 0 ? (1.0 / $prob) : 0.0;
+                $mult = round($mult, 2);
+                $game['multiplier'] = $mult;
+                $mines[$gameId] = $game;
+                atomicJsonWrite($mines_file, $mines);
+                $respond(true, ['bust' => false, 'multiplier' => $mult, 'revealed' => $game['revealed'], 'game' => $game]);
+            case 'mines_cashout':
+                $requireAuth();
+                $uid = $_SESSION['user']['id'];
+                $gameId = $_POST['game_id'] ?? '';
+                $mines = readJson($mines_file);
+                if (!$gameId || !isset($mines[$gameId])) $respond(false, ['error' => 'game_not_found'], 404);
+                $game = $mines[$gameId];
+                if ($game['user_id'] !== $uid) $respond(false, ['error' => 'forbidden'], 403);
+                if ($game['status'] !== 'active') $respond(false, ['error' => 'not_active'], 400);
+                $cells = $game['rows'] * $game['cols'];
+                $safeTotal = $cells - $game['mines'];
+                $s = count($game['revealed']);
+                $prob = 1.0;
+                for ($i = 0; $i < $s; $i++) {
+                    $prob *= ($safeTotal - $i) / ($cells - $i);
+                }
+                $mult = $prob > 0 ? (1.0 / $prob) : 0.0;
+                $payout = round($game['bet'] * $mult, 2);
+                $users = loadUsers();
+                $users[$uid]['balance'] = floatval($users[$uid]['balance'] ?? 0) + $payout;
+                $transactions = readJson($transactions_file);
+                $transactions[] = [
+                    'id' => uniqid('tx_', true),
+                    'user_id' => $uid,
+                    'type' => 'win_mines',
+                    'amount' => $payout,
+                    'time' => date('c')
+                ];
+                $game['status'] = 'cashed_out';
+                $mines[$gameId] = $game;
+                saveUsers($users);
+                atomicJsonWrite($transactions_file, $transactions);
+                atomicJsonWrite($mines_file, $mines);
+                $_SESSION['user'] = $users[$uid];
+                $respond(true, ['payout' => $payout, 'balance' => $users[$uid]['balance'], 'game' => $game]);
+            case 'slots_spin':
+                $requireAuth();
+                $uid = $_SESSION['user']['id'];
+                $bet = floatval($_POST['bet'] ?? 0);
+                if ($bet <= 0) $respond(false, ['error' => 'invalid_bet'], 400);
+                if (($users[$uid]['balance'] ?? 0) < $bet) $respond(false, ['error' => 'insufficient_funds'], 400);
+                $users[$uid]['balance'] = floatval($users[$uid]['balance'] ?? 0) - $bet;
+                $transactions[] = [
+                    'id' => uniqid('tx_', true),
+                    'user_id' => $uid,
+                    'type' => 'bet_slots',
+                    'amount' => -$bet,
+                    'time' => date('c')
+                ];
+                $symbols = [
+                    ['s' => '7', 'w' => 2, 'p' => [3=>10,4=>50,5=>200]],
+                    ['s' => 'A', 'w' => 5, 'p' => [3=>6,4=>20,5=>80]],
+                    ['s' => 'K', 'w' => 6, 'p' => [3=>5,4=>15,5=>60]],
+                    ['s' => 'Q', 'w' => 7, 'p' => [3=>4,4=>12,5=>40]],
+                    ['s' => 'J', 'w' => 8, 'p' => [3=>3,4=>10,5=>30]],
+                    ['s' => '9', 'w' => 10,'p' => [3=>2,4=>6, 5=>20]]
+                ];
+                // build weighted reel
+                $pool = [];
+                foreach ($symbols as $sym) {
+                    for ($i=0; $i<$sym['w']; $i++) $pool[] = $sym['s'];
+                }
+                $reels = [];
+                for ($r=0; $r<5; $r++) {
+                    $reels[$r] = [];
+                    for ($row=0; $row<3; $row++) {
+                        $reels[$r][$row] = $pool[array_rand($pool)];
+                    }
+                }
+                $lines = [
+                    [1,1,1,1,1], // middle
+                    [0,0,0,0,0], // top
+                    [2,2,2,2,2], // bottom
+                    [0,1,2,1,0],
+                    [2,1,0,1,2]
+                ];
+                $linesCount = count($lines);
+                $lineBet = $bet / $linesCount;
+                $payout = 0;
+                $wins = [];
+                foreach ($lines as $li => $pattern) {
+                    $first = $reels[0][$pattern[0]];
+                    $count = 1;
+                    for ($c=1; $c<5; $c++) {
+                        if ($reels[$c][$pattern[$c]] === $first) $count++; else break;
+                    }
+                    if ($count >= 3) {
+                        // get multiplier for symbol
+                        $mult = 0;
+                        foreach ($symbols as $sym) {
+                            if ($sym['s'] === $first) { $mult = $sym['p'][$count] ?? 0; break; }
+                        }
+                        if ($mult > 0) {
+                            $winAmount = $lineBet * $mult;
+                            $payout += $winAmount;
+                            $wins[] = ['line' => $li+1, 'symbol' => $first, 'count' => $count, 'amount' => round($winAmount,2)];
+                        }
+                    }
+                }
+                if ($payout > 0) {
+                    $users[$uid]['balance'] = floatval($users[$uid]['balance']) + $payout;
+                    $transactions[] = [
+                        'id' => uniqid('tx_', true),
+                        'user_id' => $uid,
+                        'type' => 'win_slots',
+                        'amount' => $payout,
+                        'time' => date('c')
+                    ];
+                }
+                $spin = [
+                    'id' => uniqid('slot_', true),
+                    'user_id' => $uid,
+                    'bet' => $bet,
+                    'reels' => $reels,
+                    'payout' => round($payout,2),
+                    'wins' => $wins,
+                    'time' => date('c')
+                ];
+                $slots = readJson($slots_file);
+                $slots[] = $spin;
+                saveUsers($users);
+                atomicJsonWrite($transactions_file, $transactions);
+                atomicJsonWrite($slots_file, $slots);
+                $_SESSION['user'] = $users[$uid];
+                $respond(true, ['reels' => $reels, 'payout' => round($payout,2), 'wins' => $wins, 'balance' => $users[$uid]['balance'], 'spin' => $spin]);
+            default:
+                $respond(false, ['error' => 'unknown_api'], 400);
+        }
+    }
+
     if (isset($_POST['register'])) {
         $name = trim($_POST['name']);
         $email = trim($_POST['email']);
@@ -495,7 +937,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'steam_id' => null,
                     'avatar' => null,
                     'avatar_medium' => null,
-                    'avatar_full' => null
+                    'avatar_full' => null,
+                    'balance' => 0.0
                 ];
                 
                 saveUsers($users);
@@ -656,7 +1099,7 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DX Project - SCP: Secret Laboratory</title>
+    <title>SteamTime Casino — Реалистичное онлайн-казино</title>
     <style>
         * {
             margin: 0;
@@ -1265,7 +1708,7 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
         
         <?php if ($page === 'register'): ?>
         <div class="auth-container">
-            <h2 style="text-align: center; color: #dc143c; margin-bottom: 30px;">🎮 Регистрация DX Project</h2>
+            <h2 style="text-align: center; color: #dc143c; margin-bottom: 30px;">🎰 Регистрация — SteamTime Casino</h2>
             
             <?php if (isset($error)): ?>
                 <div class="error"><?php echo htmlspecialchars($error); ?></div>
@@ -1302,7 +1745,7 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
         
         <?php else: ?>
         <div class="auth-container">
-            <h2 style="text-align: center; color: #dc143c; margin-bottom: 30px;">🔐 Вход DX Project</h2>
+            <h2 style="text-align: center; color: #dc143c; margin-bottom: 30px;">🔐 Вход — SteamTime Casino</h2>
             
             <?php if (isset($error)): ?>
                 <div class="error"><?php echo htmlspecialchars($error); ?></div>
@@ -1365,8 +1808,8 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
             <div class="container">
                 <div class="header-content">
                     <div class="logo">
-                        <img src="logoo.png" alt="DX Project" onerror="this.style.display='none'">
-                        <h1>DX PROJECT</h1>
+                        <img src="logoo.png" alt="SteamTime Casino" onerror="this.style.display='none'">
+                        <h1>SteamTime Casino</h1>
                     </div>
                     <div class="user-info">
                         <span class="user-welcome">
@@ -1375,10 +1818,14 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
                             <?php endif; ?>
                             👋 Привет, <?php echo htmlspecialchars($_SESSION['user']['name']); ?>!
                         </span>
-                        <?php if (isAdmin()): ?>
-                            <span class="btn" style="background: gold; color: black;">👑 Админ</span>
-                        <?php endif; ?>
-                        <a href="?logout=1" class="btn btn-secondary">Выйти</a>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <span id="online-counter" class="btn btn-secondary" style="background: linear-gradient(45deg,#333,#444);">Онлайн: --</span>
+                            <span id="balance-indicator" class="btn" style="background: linear-gradient(45deg,#0a4,#0c6);">Баланс: --</span>
+                            <?php if (isAdmin()): ?>
+                                <span class="btn" style="background: gold; color: black;">👑 Админ</span>
+                            <?php endif; ?>
+                            <a href="?logout=1" class="btn btn-secondary">Выйти</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1388,14 +1835,12 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
             <div class="container">
                 <div class="nav-links">
                     <a href="?page=main" class="<?php echo $page === 'main' ? 'active' : ''; ?>">🏠 Главная</a>
-                    <a href="?page=servers" class="<?php echo $page === 'servers' ? 'active' : ''; ?>">🖥️ Сервера</a>
-                    <a href="?page=donate" class="<?php echo $page === 'donate' ? 'active' : ''; ?>">💎 Донат</a>
-                    <a href="?page=rules" class="<?php echo $page === 'rules' ? 'active' : ''; ?>">📋 Правила</a>
-                    <a href="?page=applications" class="<?php echo $page === 'applications' ? 'active' : ''; ?>">📝 Заявки</a>
+                    <a href="?page=casino" class="<?php echo $page === 'casino' ? 'active' : ''; ?>">🎰 Казино</a>
                     <a href="?page=news" class="<?php echo $page === 'news' ? 'active' : ''; ?>">📰 Новости</a>
                     <a href="?page=profile" class="<?php echo $page === 'profile' ? 'active' : ''; ?>">👤 Профиль</a>
                     <?php if (isAdmin()): ?>
                         <a href="?page=admin" class="<?php echo $page === 'admin' ? 'active' : ''; ?>">⚙️ Админ-панель</a>
+                        <a href="#" onclick="adminTopupSelf(); return false;" class="<?php echo $page === 'admin' ? 'active' : ''; ?>">➕ Пополнить баланс</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -1406,23 +1851,23 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
                 
                 <?php if ($page === 'main'): ?>
                     <div class="content-section">
-                        <h1 style="text-align: center; color: #dc143c; margin-bottom: 30px;">🎮 О ПРОЕКТЕ DX PROJECT</h1>
+                        <h1 style="text-align: center; color: #dc143c; margin-bottom: 30px;">🎰 SteamTime Casino</h1>
                         <p style="text-align: center; font-size: 1.2em; margin-bottom: 30px;">
-                            DX PROJECT — развивающийся проект в сообществе SCP: Secret Laboratory
+                            Добро пожаловать в SteamTime Casino — реалистичные игры и мгновенные выплаты. Только для 18+.
                         </p>
                         
                         <div class="grid">
                             <div class="server-card">
-                                <h3>🎯 Наша миссия</h3>
-                                <p>Мы создаём различные сервера для комфортного времяпровождения</p>
+                                <h3>💼 Баланс и выплаты</h3>
+                                <p>Пополняйте баланс, играйте и выводите выигрыши. Все транзакции логируются.</p>
                             </div>
                             <div class="server-card">
-                                <h3>💬 Комьюнити</h3>
-                                <p>Всегда прислушиваемся к мнению нашего комьюнити</p>
+                                <h3>🎡 Реалистичные игры</h3>
+                                <p>Рулетка, Сапер, Слоты, Монетка. Честные алгоритмы и анимации.</p>
                             </div>
                             <div class="server-card">
-                                <h3>🚀 Развитие</h3>
-                                <p>Стремимся к постоянному развитию и улучшению</p>
+                                <h3>📊 Реальное время</h3>
+                                <p>Онлайн-статистика, активные игроки, история ставок — всё обновляется автоматически.</p>
                             </div>
                         </div>
                         
@@ -1439,36 +1884,34 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
                         </div>
                     </div>
                 
-                <?php elseif ($page === 'servers'): ?>
+                <?php elseif ($page === 'casino'): ?>
                     <div class="content-section">
-                        <h1 style="text-align: center; color: #dc143c; margin-bottom: 40px;">🔥 НАШИ СЕРВЕРА</h1>
-                        
-                        <div class="server-card">
-                            <h2 style="color: #dc143c;">🎪 DX PROJECT NON-RP</h2>
-                            <div class="server-ip">IP: 193.164.17.28:7777</div>
-                            <p><strong>Описание:</strong> Сервер с уникальными модификациями и минимальными правилами. Добавляет разнообразие в ванильный геймплей. Идеально подходит как новичкам, так и опытным игрокам.</p>
-                            
-                            <h3 style="color: #dc143c; margin: 20px 0 10px 0;">✨ Особенности:</h3>
-                            <ul class="features-list">
-                                <li>Кастомные SCP (SCP-035, SCP-343)</li>
-                                <li>Бесконечные патроны и выносливость</li>
-                                <li>Система уровней и XP</li>
-                                <li>Социальные функции</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="server-card">
-                            <h2 style="color: #dc143c;">⚡ DX PROJECT Classic +</h2>
-                            <div class="server-ip">IP: 193.164.17.28:7778</div>
-                            <p><strong>Описание:</strong> Максимально приближенный к приятной игре сервер с расширенным сводом правил. Для тех, кто ценит более классический геймплей с порядком.</p>
-                            
-                            <h3 style="color: #dc143c; margin: 20px 0 10px 0;">📋 Особенности:</h3>
-                            <ul class="features-list">
-                                <li>Интересный геймплей</li>
-                                <li>Детальные правила</li>
-                                <li>Структурированная игра</li>
-                                <li>Контроль качества раундов</li>
-                            </ul>
+                        <h1 style="text-align: center; color: #dc143c; margin-bottom: 40px;">🎰 КАЗИНО</h1>
+                        <div class="grid">
+                            <div class="server-card">
+                                <h3>🎡 Рулетка</h3>
+                                <p>Европейская рулетка (один ноль). Ставки: цвет, число, чет/нечет.</p>
+                                <div class="features-list">
+                                    <li>Анимация вращения</li>
+                                    <li>История спинов</li>
+                                </div>
+                                <button class="btn" onclick="openGame('roulette')">Играть</button>
+                            </div>
+                            <div class="server-card">
+                                <h3>💣 Сапер</h3>
+                                <p>Выбирай клетки и избегай мин. Шансы и множители как в классике.</p>
+                                <button class="btn" onclick="openGame('mines')">Играть</button>
+                            </div>
+                            <div class="server-card">
+                                <h3>🎰 Слоты 5x3</h3>
+                                <p>Классический слот: линии выплат, вайлды и фриспины.</p>
+                                <button class="btn" onclick="openGame('slots')">Играть</button>
+                            </div>
+                            <div class="server-card">
+                                <h3>🪙 Монетка</h3>
+                                <p>Выбери сторону и сумму ставки — мгновенный результат.</p>
+                                <button class="btn" onclick="openGame('coinflip')">Играть</button>
+                            </div>
                         </div>
                     </div>
                 
@@ -1825,6 +2268,7 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
                                 <p><strong>Email:</strong> <?php echo htmlspecialchars($_SESSION['user']['email']); ?></p>
                                 <p><strong>Роль:</strong> <?php echo $_SESSION['user']['role'] === 'admin' ? '👑 Администратор' : '👤 Пользователь'; ?></p>
                                 <p><strong>Дата регистрации:</strong> <?php echo htmlspecialchars($_SESSION['user']['registration_date']); ?></p>
+                                <p><strong>Баланс:</strong> <span id="profile-balance"><?php echo number_format((float)($_SESSION['user']['balance'] ?? 0), 2, '.', ' '); ?></span></p>
                                 <?php if (!empty($_SESSION['user']['steam_id'])): ?>
                                     <p><strong>Steam ID:</strong> <?php echo htmlspecialchars($_SESSION['user']['steam_id']); ?></p>
                                     <p><strong>Тип аккаунта:</strong> 🎮 Steam аккаунт</p>
@@ -1894,7 +2338,7 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
                                             <th>Email</th>
                                             <th>Роль</th>
                                             <th>Регистрация</th>
-                                            <th>Steam ID</th>
+                                            <th>Баланс</th>
                                             <th>Действия</th>
                                         </tr>
                                     </thead>
@@ -1925,17 +2369,17 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
                                                     </form>
                                                 </td>
                                                 <td><?php echo htmlspecialchars($user['registration_date']); ?></td>
+                                                <td><?php echo number_format((float)($user['balance'] ?? 0), 2, '.', ' '); ?></td>
                                                 <td>
-                                                    <?php if ($user['steam_id']): ?>
-                                                        <span style="color: #66c0f4;">🎮 <?php echo htmlspecialchars($user['steam_id']); ?></span>
-                                                    <?php else: ?>
-                                                        <span style="color: #888;">Нет</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <form method="post" style="display: inline;" onsubmit="return confirm('Удалить пользователя?')">
+                                                    <form method="post" style="display: inline; margin-right: 8px;" onsubmit="return confirm('Удалить пользователя?')">
                                                         <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($user['id']); ?>">
                                                         <button type="submit" name="admin_delete_user" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;">Удалить</button>
+                                                    </form>
+                                                    <form method="post" style="display: inline;">
+                                                        <input type="hidden" name="api" value="balance_topup">
+                                                        <input type="hidden" name="user_id_override" value="<?php echo htmlspecialchars($user['id']); ?>">
+                                                        <input type="number" step="0.01" name="amount" class="form-control" placeholder="Сумма" style="width:100px; display:inline-block;">
+                                                        <button type="submit" class="btn" style="padding: 5px 10px; font-size: 12px;">Пополнить</button>
                                                     </form>
                                                 </td>
                                             </tr>
@@ -1945,29 +2389,27 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
                             </div>
                         </div>
                         
+                        <?php 
+                        $sessions = readJson($sessions_file); 
+                        $transactions = readJson($transactions_file);
+                        $now = time();
+                        $online = 0; foreach ($sessions as $s) { if (($now - ($s['time'] ?? 0)) <= 60) $online++; }
+                        ?>
                         <div class="admin-panel">
                             <h2 style="color: #dc143c; margin-bottom: 20px;">📊 Статистика</h2>
-                            
                             <div class="grid">
                                 <div style="background: rgba(0, 128, 0, 0.2); padding: 20px; border-radius: 10px; text-align: center;">
                                     <h3 style="color: #00ff00;">Общая статистика</h3>
                                     <p><strong>Всего пользователей:</strong> <?php echo count($users); ?></p>
-                                    <p><strong>Администраторов:</strong> <?php echo count(array_filter($users, function($u) { return $u['role'] === 'admin'; })); ?></p>
-                                    <p><strong>Steam пользователей:</strong> <?php echo count(array_filter($users, function($u) { return !empty($u['steam_id']); })); ?></p>
+                                    <p><strong>Онлайн (60с):</strong> <?php echo $online; ?></p>
+                                    <p><strong>Транзакций:</strong> <?php echo count($transactions); ?></p>
                                 </div>
-                                
                                 <div style="background: rgba(0, 0, 255, 0.2); padding: 20px; border-radius: 10px; text-align: center;">
-                                    <h3 style="color: #00bfff;">Последние регистрации</h3>
-                                    <?php
-                                    $recent_users = array_slice(array_reverse($users), 0, 5);
-                                    foreach ($recent_users as $user):
-                                    ?>
-                                        <p>
-                                            <?php if (!empty($user['avatar'])): ?>
-                                                <img src="<?php echo htmlspecialchars($user['avatar']); ?>" alt="Avatar" style="width: 20px; height: 20px; border-radius: 50%; margin-right: 5px; vertical-align: middle;">
-                                            <?php endif; ?>
-                                            <?php echo htmlspecialchars($user['name']); ?> - <?php echo htmlspecialchars($user['registration_date']); ?>
-                                        </p>
+                                    <h3 style="color: #00bfff;">Последние транзакции</h3>
+                                    <?php 
+                                    $recent_tx = array_slice(array_reverse($transactions), 0, 5);
+                                    foreach ($recent_tx as $t): ?>
+                                        <p><?php echo htmlspecialchars($t['id']); ?> — <?php echo htmlspecialchars($t['type']); ?> — <?php echo number_format((float)$t['amount'],2,'.',' '); ?> — <?php echo htmlspecialchars($t['time']); ?></p>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
@@ -2074,6 +2516,78 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
             }
         }
         
+        function apiPost(data) {
+            return fetch('', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
+                body: new URLSearchParams(data)
+            }).then(r => r.json());
+        }
+        
+        function heartbeat() {
+            apiPost({api: 'heartbeat'})
+                .then(res => {
+                    if (res.ok) {
+                        const online = document.getElementById('online-counter');
+                        const balance = document.getElementById('balance-indicator');
+                        if (online) online.textContent = 'Онлайн: ' + res.online;
+                        if (balance) balance.textContent = 'Баланс: ' + Number(res.balance).toFixed(2);
+                        const pb = document.getElementById('profile-balance');
+                        if (pb) pb.textContent = Number(res.balance).toFixed(2);
+                    }
+                })
+                .catch(()=>{});
+        }
+        
+        function openGame(game) {
+            if (game === 'roulette') {
+                const bet = prompt('Ставка (руб):', '10');
+                if (!bet) return;
+                const kind = prompt('Тип ставки: red/black/odd/even/number', 'red');
+                const payload = {api:'roulette_spin', bet: bet, kind: kind};
+                if (kind === 'number') {
+                    const n = prompt('Число 0-36', '7');
+                    payload.number = n;
+                }
+                apiPost(payload).then(res => {
+                    if (res.ok) {
+                        alert('Выпало: ' + res.result + ' (' + res.color + ')\nНовый баланс: ' + res.balance.toFixed(2));
+                        heartbeat();
+                    } else {
+                        alert('Ошибка: ' + (res.error || 'unknown'));
+                    }
+                });
+            } else if (game === 'coinflip') {
+                const bet = prompt('Ставка (руб):', '10');
+                if (!bet) return;
+                const side = prompt('Сторона: heads/tails', 'heads');
+                apiPost({api:'coinflip_flip', bet: bet, side: side}).then(res => {
+                    if (res.ok) {
+                        alert('Результат: ' + res.result + '\nНовый баланс: ' + res.balance.toFixed(2));
+                        heartbeat();
+                    } else {
+                        alert('Ошибка: ' + (res.error || 'unknown'));
+                    }
+                });
+            } else {
+                alert('Игра в разработке: ' + game);
+            }
+        }
+        
+        function adminTopupSelf() {
+            const amount = prompt('Сумма пополнения (руб):', '100');
+            if (!amount) return;
+            apiPost({api:'balance_topup', amount: amount}).then(res => {
+                if (res.ok) {
+                    alert('Баланс пополнен. Новый баланс: ' + Number(res.balance).toFixed(2));
+                    heartbeat();
+                } else {
+                    alert('Ошибка: ' + (res.error || 'unknown'));
+                }
+            });
+        }
+        
+        // background UI effects
         window.onclick = function(event) {
             const modals = document.querySelectorAll('.modal');
             modals.forEach(modal => {
@@ -2082,6 +2596,11 @@ if (isset($_GET['debug']) && $_GET['debug'] === 'steam') {
                 }
             });
         }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            setInterval(heartbeat, 5000);
+            heartbeat();
+        });
         
         document.addEventListener('DOMContentLoaded', function() {
             const serverCards = document.querySelectorAll('.server-card');

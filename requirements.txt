@@ -1,0 +1,23 @@
+# Casino Website Dependencies
+# No additional packages needed - uses built-in PHP functionality
+
+# Discord Bots Dependencies
+discord.py>=2.3.2
+aiohttp>=3.8.0
+sqlite3
+asyncio
+json
+datetime
+random
+math
+typing
+
+# Optional: For enhanced functionality
+requests>=2.28.0
+python-dotenv>=0.19.0
+
+# Development Dependencies
+# These are optional for development/testing
+pytest>=7.0.0
+black>=22.0.0
+flake8>=4.0.0

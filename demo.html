@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🕵️ МАФИЯ 2.0 - Демо версия</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            text-align: center;
+        }
+        
+        .demo-card {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+        
+        .logo {
+            font-size: 4rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .feature {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .installation {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        code {
+            background: #263238;
+            color: #4fc3f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-card">
+        <div class="logo">🕵️ МАФИЯ 2.0</div>
+        
+        <h2>Демонстрация возможностей</h2>
+        <p>Это демо-версия для просмотра интерфейса. Для полной функциональности запустите сервер.</p>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>🎮 Мультиплеер</h3>
+                <p>Настоящий WebSocket сервер для игры в реальном времени</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🎭 14 ролей</h3>
+                <p>Мафия, Дон, Шериф, Доктор, Маньяк и другие уникальные роли</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🌟 Красивый UI</h3>
+                <p>Современный дизайн с анимациями и эффектами</p>
+            </div>
+            
+            <div class="feature">
+                <h3>💾 Сохранение</h3>
+                <p>Все данные сохраняются в JSON файлы</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🏆 Достижения</h3>
+                <p>Система уровней, рейтинга и турниров</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🛒 Магазин</h3>
+                <p>Кастомизация аватаров и тем оформления</p>
+            </div>
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Внимание:</strong> Это только демо-версия интерфейса. Для игры нужно запустить Node.js сервер.
+        </div>
+        
+        <div class="installation">
+            <h3>📥 Установка и запуск:</h3>
+            <ol>
+                <li>Установите Node.js: <code>https://nodejs.org</code></li>
+                <li>В терминале выполните: <code>npm install</code></li>
+                <li>Запустите сервер: <code>npm start</code></li>
+                <li>Откройте: <code>http://localhost:3000</code></li>
+            </ol>
+            
+            <p><strong>Или используйте скрипты:</strong></p>
+            <ul>
+                <li>Windows: дважды кликните <code>start.bat</code></li>
+                <li>Linux/Mac: выполните <code>./start.sh</code></li>
+            </ul>
+        </div>
+        
+        <a href="index.html" class="btn">🎮 Перейти к интерфейсу игры</a>
+        <a href="https://github.com" class="btn" style="background: linear-gradient(135deg, #2d3436 0%, #636e72 100%);">📚 Документация</a>
+        
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee;">
+            <h3>🛠️ Технологии:</h3>
+            <p>Node.js • Express • Socket.io • HTML5 • CSS3 • JavaScript ES6+ • JSON Database</p>
+        </div>
+    </div>
+    
+    <script>
+        // Простая анимация
+        document.addEventListener('DOMContentLoaded', function() {
+            const logo = document.querySelector('.logo');
+            setInterval(() => {
+                logo.style.filter = `hue-rotate(${Math.random() * 360}deg)`;
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

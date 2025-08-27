@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🕵️ МАФИЯ 2.0 - Статическая версия</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #00b894;
+            --danger: #e17055;
+            --warning: #fdcb6e;
+            --info: #74b9ff;
+            --dark: #2d3436;
+            --gold: #f39c12;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: all 0.5s ease;
+        }
+
+        .warning-banner {
+            background: linear-gradient(135deg, #e17055, #d63031);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 70px 20px 20px;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            margin: 20px 0;
+        }
+
+        .logo {
+            font-size: 4rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulse 2s infinite;
+            text-align: center;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--info) 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #d63031 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, #00a085 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning) 0%, var(--danger) 100%);
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .menu-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 35px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            text-align: center;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .info-section {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border-left: 5px solid var(--info);
+        }
+
+        .warning-section {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border-left: 5px solid var(--warning);
+            color: #856404;
+        }
+
+        .success-section {
+            background: #d4edda;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border-left: 5px solid var(--success);
+            color: #155724;
+        }
+
+        .code-block {
+            background: #263238;
+            color: #4fc3f7;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .feature-item {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .comparison-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .check {
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .cross {
+            color: var(--danger);
+            font-weight: bold;
+        }
+
+        .partial {
+            color: var(--warning);
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .menu-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .logo {
+                font-size: 3rem;
+            }
+
+            .container {
+                padding: 70px 10px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="warning-banner">
+        ⚠️ ИНФОРМАЦИЯ О МУЛЬТИПЛЕЕРЕ - Как работать с разными типами хостинга
+    </div>
+
+    <!-- Главная информация -->
+    <div class="screen active" id="main-info">
+        <div class="container">
+            <div class="logo">🕵️ МАФИЯ 2.0</div>
+            
+            <div class="card">
+                <h1 style="text-align: center; margin-bottom: 30px;">Объяснение мультиплеера и хостинга</h1>
+                
+                <div class="warning-section">
+                    <h3>🤔 Ваша ситуация:</h3>
+                    <p><strong>У вас есть бесплатный хостинг Infinity</strong> - это статический хостинг, который поддерживает только HTML, CSS, JS файлы.</p>
+                    <p><strong>Проблема:</strong> Настоящий мультиплеер требует серверную часть (Node.js), которую Infinity не поддерживает.</p>
+                </div>
+
+                <h2>🔍 Типы хостинга и их возможности:</h2>
+
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Тип хостинга</th>
+                            <th>Поддержка</th>
+                            <th>Мультиплеер</th>
+                            <th>Примеры</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Статический</strong><br>(ваш Infinity)</td>
+                            <td>HTML, CSS, JS</td>
+                            <td class="cross">❌ Настоящий НЕТ</td>
+                            <td>GitHub Pages, Netlify, Infinity</td>
+                        </tr>
+                        <tr>
+                            <td><strong>VPS/Сервер</strong></td>
+                            <td>Node.js, Python, PHP и др.</td>
+                            <td class="check">✅ Полный мультиплеер</td>
+                            <td>DigitalOcean, AWS, VDS</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PaaS платформы</strong></td>
+                            <td>Node.js приложения</td>
+                            <td class="check">✅ Полный мультиплеер</td>
+                            <td>Heroku, Railway, Render</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Firebase/Supabase</strong></td>
+                            <td>Облачная база данных</td>
+                            <td class="partial">⚠️ Псевдо-мультиплеер</td>
+                            <td>Firebase, Supabase</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="menu-grid">
+                    <div class="menu-card" onclick="showScreen('static-solutions')">
+                        <div class="menu-icon">🛠️</div>
+                        <h3>Решения для Infinity</h3>
+                        <p>Что можно сделать на статическом хостинге</p>
+                    </div>
+                    
+                    <div class="menu-card" onclick="showScreen('real-multiplayer')">
+                        <div class="menu-icon">🌐</div>
+                        <h3>Настоящий мультиплеер</h3>
+                        <p>Как получить полноценную игру</p>
+                    </div>
+                    
+                    <div class="menu-card" onclick="showScreen('hosting-options')">
+                        <div class="menu-icon">🏠</div>
+                        <h3>Варианты хостинга</h3>
+                        <p>Бесплатные и платные решения</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Решения для статического хостинга -->
+    <div class="screen" id="static-solutions">
+        <div class="container">
+            <button class="btn" onclick="showScreen('main-info')">← Назад</button>
+            
+            <div class="card">
+                <h2>🛠️ Что можно сделать на статическом хостинге (Infinity)</h2>
+                
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <h4>✅ Что РАБОТАЕТ</h4>
+                        <ul>
+                            <li>🎨 Красивый интерфейс</li>
+                            <li>✨ Анимации и эффекты</li>
+                            <li>🎮 Локальная игра</li>
+                            <li>🤖 Игра с ботами</li>
+                            <li>💾 LocalStorage сохранения</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <h4>❌ Что НЕ РАБОТАЕТ</h4>
+                        <ul>
+                            <li>🌐 Реальный мультиплеер</li>
+                            <li>💬 Чат между игроками</li>
+                            <li>🏠 Общие комнаты</li>
+                            <li>📊 Общая статистика</li>
+                            <li>💾 Серверная база данных</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>🔧 Варианты псевдо-мультиплеера:</h3>
+
+                <div class="info-section">
+                    <h4>1️⃣ Firebase Realtime Database</h4>
+                    <p><strong>Как работает:</strong> Используете бесплатную базу данных Firebase для синхронизации между игроками.</p>
+                    <p><strong>Плюсы:</strong> Бесплатно, работает на статических хостингах</p>
+                    <p><strong>Минусы:</strong> Ограниченная функциональность, задержки</p>
+                    
+                    <div class="code-block">
+// Пример подключения Firebase
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, set, onValue } from 'firebase/database';
+
+// Создаете проект на firebase.google.com
+// Получаете конфиг и используете их API
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h4>2️⃣ PeerJS (P2P соединение)</h4>
+                    <p><strong>Как работает:</strong> Игроки соединяются напрямую друг с другом через WebRTC.</p>
+                    <p><strong>Плюсы:</strong> Не нужен сервер, быстрое соединение</p>
+                    <p><strong>Минусы:</strong> Сложная настройка, проблемы с NAT</p>
+                </div>
+
+                <div class="info-section">
+                    <h4>3️⃣ Supabase (альтернатива Firebase)</h4>
+                    <p><strong>Как работает:</strong> Облачная PostgreSQL база с реальным временем.</p>
+                    <p><strong>Плюсы:</strong> Более мощная чем Firebase, SQL</p>
+                    <p><strong>Минусы:</strong> Более сложная настройка</p>
+                </div>
+
+                <div class="success-section">
+                    <h4>💡 Рекомендация для Infinity:</h4>
+                    <p>Лучший вариант - <strong>Firebase</strong>. Создайте проект на firebase.google.com, получите ключи API и интегрируйте в HTML.</p>
+                    <p>Это даст вам псевдо-мультиплеер: игроки смогут видеть друг друга, но с ограничениями.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Настоящий мультиплеер -->
+    <div class="screen" id="real-multiplayer">
+        <div class="container">
+            <button class="btn" onclick="showScreen('main-info')">← Назад</button>
+            
+            <div class="card">
+                <h2>🌐 Как получить настоящий мультиплеер</h2>
+                
+                <div class="warning-section">
+                    <h3>⚠️ Что нужно понимать:</h3>
+                    <p>Для <strong>настоящего мультиплеера</strong> нужен сервер, который:</p>
+                    <ul>
+                        <li>🔄 Координирует всех игроков</li>
+                        <li>⏰ Управляет таймерами игры</li>
+                        <li>🎭 Распределяет роли</li>
+                        <li>💬 Обрабатывает чат</li>
+                        <li>💾 Сохраняет состояние игры</li>
+                    </ul>
+                </div>
+
+                <h3>🛠️ Архитектура настоящего мультиплеера:</h3>
+
+                <div class="code-block">
+КЛИЕНТЫ (браузеры)     →     СЕРВЕР (Node.js)     →     БАЗА ДАННЫХ
+     ↓                              ↓                         ↓
+🎮 index.html              📡 server.js              📁 users.json
+💻 client.js               🔌 Socket.io              📁 rooms.json
+🎨 styles.css              🎮 game logic             📁 stats.json
+                </div>
+
+                <div class="info-section">
+                    <h4>🔌 WebSocket соединения (Socket.io)</h4>
+                    <p>Обеспечивают мгновенную связь между игроками. Когда один игрок делает ход, все остальные видят это сразу.</p>
+                </div>
+
+                <div class="info-section">
+                    <h4>🎮 Серверная логика</h4>
+                    <p>Сервер знает правила игры, следит за ходами, определяет победителей. Игроки не могут читерить.</p>
+                </div>
+
+                <div class="info-section">
+                    <h4>💾 Постоянное хранение</h4>
+                    <p>Все данные игроков, статистика и настройки сохраняются на сервере.</p>
+                </div>
+
+                <h3>📁 Файлы для настоящего мультиплеера:</h3>
+                <ul>
+                    <li><strong>server.js</strong> - Node.js сервер с Socket.io</li>
+                    <li><strong>index.html</strong> - Клиентский интерфейс</li>
+                    <li><strong>client.js</strong> - JavaScript для связи с сервером</li>
+                    <li><strong>package.json</strong> - Зависимости Node.js</li>
+                    <li><strong>data/*.json</strong> - Файлы базы данных</li>
+                </ul>
+
+                <div class="success-section">
+                    <h4>🎯 Итог:</h4>
+                    <p>У меня есть все эти файлы готовые! Но для их работы нужен хостинг с поддержкой Node.js.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Варианты хостинга -->
+    <div class="screen" id="hosting-options">
+        <div class="container">
+            <button class="btn" onclick="showScreen('main-info')">← Назад</button>
+            
+            <div class="card">
+                <h2>🏠 Варианты хостинга для мультиплеера</h2>
+                
+                <h3>💰 БЕСПЛАТНЫЕ варианты:</h3>
+
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <h4>🚂 Railway.app</h4>
+                        <p><strong>Бесплатно:</strong> 500 часов/месяц</p>
+                        <p><strong>Плюсы:</strong> Простое развертывание, автодеплой из GitHub</p>
+                        <p><strong>Минусы:</strong> Ограничение по времени</p>
+                        <div class="code-block">
+railway.app → Deploy → Connect GitHub → Выбрать репозиторий
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <h4>🎨 Render.com</h4>
+                        <p><strong>Бесплатно:</strong> 750 часов/месяц</p>
+                        <p><strong>Плюсы:</strong> Щедрый лимит, SSL сертификаты</p>
+                        <p><strong>Минусы:</strong> Медленный старт после неактивности</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <h4>🟣 Heroku</h4>
+                        <p><strong>Бесплатно:</strong> Ограниченно</p>
+                        <p><strong>Плюсы:</strong> Популярный, много документации</p>
+                        <p><strong>Минусы:</strong> Урезали бесплатный план</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <h4>⚡ Vercel/Netlify</h4>
+                        <p><strong>Статус:</strong> Только для статических сайтов</p>
+                        <p><strong>Для Node.js:</strong> Только serverless функции</p>
+                        <p><strong>Вердикт:</strong> Не подходит для мультиплеера</p>
+                    </div>
+                </div>
+
+                <h3>💵 ПЛАТНЫЕ варианты:</h3>
+
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <h4>💧 DigitalOcean</h4>
+                        <p><strong>Цена:</strong> От $5/месяц</p>
+                        <p><strong>Что получаете:</strong> Полный VPS сервер</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <h4>☁️ AWS/Google Cloud</h4>
+                        <p><strong>Цена:</strong> От $5-10/месяц</p>
+                        <p><strong>Плюсы:</strong> Масштабируемость</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <h4>🏠 Обычный VDS</h4>
+                        <p><strong>Цена:</strong> От 200₽/месяц</p>
+                        <p><strong>Провайдеры:</strong> TimeWeb, Selectel, etc.</p>
+                    </div>
+                </div>
+
+                <h3>🛠️ Локальный сервер (бесплатно):</h3>
+
+                <div class="info-section">
+                    <h4>💻 Запуск на своем компьютере</h4>
+                    <p><strong>Как работает:</strong> Запускаете сервер дома, друзья подключаются к вашему IP.</p>
+                    <p><strong>Нужно:</strong></p>
+                    <ul>
+                        <li>🌐 Пробросить порты в роутере</li>
+                        <li>🔍 Узнать внешний IP адрес</li>
+                        <li>💻 Держать компьютер включенным</li>
+                    </ul>
+                    
+                    <div class="code-block">
+1. Запустите: npm start
+2. Пробросьте порт 3000 в роутере
+3. Узнайте внешний IP: whatismyipaddress.com
+4. Друзья заходят на: http://ваш-ip:3000
+                    </div>
+                </div>
+
+                <div class="success-section">
+                    <h4>🎯 Мои рекомендации:</h4>
+                    <p><strong>Для начала:</strong> Railway.app или Render.com (бесплатно)</p>
+                    <p><strong>Для серьезного проекта:</strong> DigitalOcean VPS ($5/месяц)</p>
+                    <p><strong>Для тестирования:</strong> Локальный сервер (бесплатно)</p>
+                </div>
+
+                <div class="warning-section">
+                    <h4>⚠️ Что касается Infinity:</h4>
+                    <p>К сожалению, на Infinity <strong>нельзя</strong> запустить настоящий мультиплеер.</p>
+                    <p>Максимум что можно - Firebase интеграция для псевдо-мультиплеера.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // Анимация логотипа
+        setInterval(() => {
+            const logo = document.querySelector('.logo');
+            if (logo) {
+                logo.style.filter = `hue-rotate(${Math.random() * 360}deg)`;
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

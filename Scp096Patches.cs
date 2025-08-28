@@ -25,7 +25,8 @@ namespace Scp096Mask.Patches
                 if (Plugin.Instance._eventHandlers.IsScp096Masked(scp096Player))
                 {
                     if (Plugin.Instance.Config.Debug)
-                        Log.Debug($"SCP-096 {scp096Player.Nickname} с маской не агрится на {Player.Get(target)?.Nickname}");
+                        Log.Debug(string.Format("SCP-096 {0} с маской не агрится на {1}", 
+                            scp096Player.Nickname, Player.Get(target)?.Nickname ?? "Unknown"));
                     return false;
                 }
 
@@ -33,7 +34,7 @@ namespace Scp096Mask.Patches
             }
             catch (Exception ex)
             {
-                Log.Error($"Ошибка в Scp096AddTargetPatch: {ex}");
+                Log.Error(string.Format("Ошибка в Scp096AddTargetPatch: {0}", ex));
                 return true;
             }
         }
@@ -60,7 +61,8 @@ namespace Scp096Mask.Patches
                 {
                     __result = false;
                     if (Plugin.Instance.Config.Debug)
-                        Log.Debug($"SCP-096 {scp096Player.Nickname} с маской не обнаруживается игроком {Player.Get(target)?.Nickname}");
+                        Log.Debug(string.Format("SCP-096 {0} с маской не обнаруживается игроком {1}", 
+                            scp096Player.Nickname, Player.Get(target)?.Nickname ?? "Unknown"));
                     return false;
                 }
 
@@ -68,7 +70,7 @@ namespace Scp096Mask.Patches
             }
             catch (Exception ex)
             {
-                Log.Error($"Ошибка в Scp096IsObservedByPatch: {ex}");
+                Log.Error(string.Format("Ошибка в Scp096IsObservedByPatch: {0}", ex));
                 return true;
             }
         }
@@ -94,7 +96,7 @@ namespace Scp096Mask.Patches
                 if (Plugin.Instance._eventHandlers.IsScp096Masked(scp096Player))
                 {
                     if (Plugin.Instance.Config.Debug)
-                        Log.Debug($"SCP-096 {scp096Player.Nickname} с маской не может агриться");
+                        Log.Debug(string.Format("SCP-096 {0} с маской не может агриться", scp096Player.Nickname));
                     return false;
                 }
 
@@ -102,7 +104,7 @@ namespace Scp096Mask.Patches
             }
             catch (Exception ex)
             {
-                Log.Error($"Ошибка в Scp096RagePatch: {ex}");
+                Log.Error(string.Format("Ошибка в Scp096RagePatch: {0}", ex));
                 return true;
             }
         }
@@ -135,7 +137,7 @@ namespace Scp096Mask.Patches
             }
             catch (Exception ex)
             {
-                Log.Error($"Ошибка в Scp096HasTargetPatch: {ex}");
+                Log.Error(string.Format("Ошибка в Scp096HasTargetPatch: {0}", ex));
                 return true;
             }
         }
@@ -168,7 +170,7 @@ namespace Scp096Mask.Patches
             }
             catch (Exception ex)
             {
-                Log.Error($"Ошибка в Scp096IsObservingPatch: {ex}");
+                Log.Error(string.Format("Ошибка в Scp096IsObservingPatch: {0}", ex));
                 return true;
             }
         }
@@ -195,7 +197,8 @@ namespace Scp096Mask.Patches
                 {
                     __result = false;
                     if (Plugin.Instance.Config.Debug)
-                        Log.Debug($"SCP-096 {scp096Player.Nickname} с маской не может быть активирован игроком {Player.Get(target)?.Nickname}");
+                        Log.Debug(string.Format("SCP-096 {0} с маской не может быть активирован игроком {1}", 
+                            scp096Player.Nickname, Player.Get(target)?.Nickname ?? "Unknown"));
                     return false;
                 }
 
@@ -203,7 +206,7 @@ namespace Scp096Mask.Patches
             }
             catch (Exception ex)
             {
-                Log.Error($"Ошибка в Scp096CanBeTriggeredByPatch: {ex}");
+                Log.Error(string.Format("Ошибка в Scp096CanBeTriggeredByPatch: {0}", ex));
                 return true;
             }
         }
@@ -229,7 +232,8 @@ namespace Scp096Mask.Patches
                 if (Plugin.Instance._eventHandlers.IsScp096Masked(scp096Player))
                 {
                     if (Plugin.Instance.Config.Debug)
-                        Log.Debug($"SCP-096 {scp096Player.Nickname} с маской не удаляет цель {Player.Get(target)?.Nickname}");
+                        Log.Debug(string.Format("SCP-096 {0} с маской не удаляет цель {1}", 
+                            scp096Player.Nickname, Player.Get(target)?.Nickname ?? "Unknown"));
                     return true; // Позволяем удаление цели
                 }
 
@@ -237,7 +241,7 @@ namespace Scp096Mask.Patches
             }
             catch (Exception ex)
             {
-                Log.Error($"Ошибка в Scp096RemoveTargetPatch: {ex}");
+                Log.Error(string.Format("Ошибка в Scp096RemoveTargetPatch: {0}", ex));
                 return true;
             }
         }
@@ -266,7 +270,7 @@ namespace Scp096Mask.Patches
                     if (state == Scp096PlayerState.Docile || state == Scp096PlayerState.TryNotToCry)
                     {
                         if (Plugin.Instance.Config.Debug)
-                            Log.Debug($"SCP-096 {scp096Player.Nickname} с маской остается спокойным");
+                            Log.Debug(string.Format("SCP-096 {0} с маской остается спокойным", scp096Player.Nickname));
                         return false;
                     }
                 }
@@ -275,7 +279,7 @@ namespace Scp096Mask.Patches
             }
             catch (Exception ex)
             {
-                Log.Error($"Ошибка в Scp096StateControllerPatch: {ex}");
+                Log.Error(string.Format("Ошибка в Scp096StateControllerPatch: {0}", ex));
                 return true;
             }
         }

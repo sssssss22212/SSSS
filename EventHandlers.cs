@@ -327,7 +327,7 @@ namespace Scp096Mask
             ev.IsAllowed = false;
         }
 
-        private void TryInteractWithScp096(Player player)
+        public void TryInteractWithScp096(Player player)
         {
             if (!HasMask(player))
             {
@@ -420,9 +420,10 @@ namespace Scp096Mask
                 // Обновляем прогресс
                 float progress = elapsed / equipTime;
                 int progressBars = Mathf.RoundToInt(progress * 10);
-                string progressBar = $"<color=yellow>[{"█".PadRight(progressBars, '█')}{"░".PadRight(10 - progressBars, '░')}] {(progress * 100):F0}%</color>";
+                string progressBar = new string('█', progressBars) + new string('░', 10 - progressBars);
+                string progressText = $"<color=yellow>[{progressBar}] {(progress * 100):F0}%</color>";
                 
-                ShowHint(player, $"{_config.Messages.MaskEquipping}\n{progressBar}", 0.5f);
+                ShowHint(player, $"{_config.Messages.MaskEquipping}\n{progressText}", 0.5f);
 
                 elapsed += 0.2f;
                 yield return Timing.WaitForSeconds(0.2f);
@@ -564,7 +565,8 @@ namespace Scp096Mask
                         {
                             if (i < roomConfig.SpawnPositions.Count)
                             {
-                                spawnPosition = room.Position + roomConfig.SpawnPositions[i];
+                                var spawnPos = roomConfig.SpawnPositions[i];
+                                spawnPosition = room.Position + new Vector3(spawnPos.X, spawnPos.Y, spawnPos.Z);
                             }
                             else
                             {
@@ -579,26 +581,27 @@ namespace Scp096Mask
                                 continue;
                         }
 
-                        // Создаем маску
-                        var medkit = Item.Create(ItemType.Medkit);
-                        var pickup = medkit.CreatePickup(spawnPosition);
-                        
-                        spawnedMasks.Add(pickup);
-                        ApplyMaskVisualEffects(pickup);
-                        
-                        // Обновляем счетчики
-                        if (!roomMaskCounts.ContainsKey(room.Type))
-                            roomMaskCounts[room.Type] = 0;
-                        roomMaskCounts[room.Type]++;
-                        totalSpawned++;
-
-                        if (_config.AdvancedSpawn.LogMaskSpawns)
+                        // Создаем маску через пикап
+                        var pickup = CreateMaskPickup(spawnPosition);
+                        if (pickup != null)
                         {
-                            Log.Info($"Маска SCP-096 создана в {room.Type} ({spawnPosition})");
+                            spawnedMasks.Add(pickup);
+                            ApplyMaskVisualEffects(pickup);
+                            
+                            // Обновляем счетчики
+                            if (!roomMaskCounts.ContainsKey(room.Type))
+                                roomMaskCounts[room.Type] = 0;
+                            roomMaskCounts[room.Type]++;
+                            totalSpawned++;
+
+                            if (_config.AdvancedSpawn.LogMaskSpawns)
+                            {
+                                Log.Info($"Маска SCP-096 создана в {room.Type} ({spawnPosition})");
+                            }
                         }
 
                         // Небольшая задержка между спавном масок
-                        Timing.CallDelayed(0.1f * i, () => { });
+                        Timing.WaitForOneFrame;
                     }
                 }
             }
@@ -619,20 +622,21 @@ namespace Scp096Mask
                     if (spawnedMasks.Count < _config.AdvancedSpawn.MaxMasksOnMap && 
                         TryFindSpawnPosition(out Vector3 position))
                     {
-                        var medkit = Item.Create(ItemType.Medkit);
-                        var pickup = medkit.CreatePickup(position);
-                        
-                        spawnedMasks.Add(pickup);
-                        ApplyMaskVisualEffects(pickup);
-                        spawnedCount++;
-
-                        if (_config.AdvancedSpawn.LogMaskSpawns)
+                        var pickup = CreateMaskPickup(position);
+                        if (pickup != null)
                         {
-                            var parentRoom = Room.FindParentRoom(position);
-                            if (parentRoom != null)
-                                Log.Info($"Маска SCP-096 создана в {parentRoom.Type} ({position})");
-                            else
-                                Log.Info($"Маска SCP-096 создана в неизвестной комнате ({position})");
+                            spawnedMasks.Add(pickup);
+                            ApplyMaskVisualEffects(pickup);
+                            spawnedCount++;
+
+                            if (_config.AdvancedSpawn.LogMaskSpawns)
+                            {
+                                var parentRoom = Room.FindParentRoom(position);
+                                if (parentRoom != null)
+                                    Log.Info($"Маска SCP-096 создана в {parentRoom.Type} ({position})");
+                                else
+                                    Log.Info($"Маска SCP-096 создана в неизвестной комнате ({position})");
+                            }
                         }
                     }
                 });
@@ -640,6 +644,22 @@ namespace Scp096Mask
 
             if (_config.Debug)
                 Log.Debug($"Обычный спавн: запущен спавн {masksToSpawn} масок SCP-096");
+        }
+
+        private Pickup CreateMaskPickup(Vector3 position)
+        {
+            try
+            {
+                // Создаем пикап напрямую через Exiled API
+                var pickup = Pickup.CreateAndSpawn(ItemType.Medkit, position, Quaternion.identity);
+                return pickup;
+            }
+            catch (Exception ex)
+            {
+                if (_config.Debug)
+                    Log.Error($"Ошибка создания пикапа маски: {ex}");
+                return null;
+            }
         }
 
         private bool TryFindSpawnPosition(out Vector3 position)
@@ -844,34 +864,35 @@ namespace Scp096Mask
                 {
                     if (TryFindSpawnPosition(out Vector3 position))
                     {
-                        var medkit = Item.Create(ItemType.Medkit);
-                        var pickup = medkit.CreatePickup(position);
-                        
-                        spawnedMasks.Add(pickup);
-                        ApplyMaskVisualEffects(pickup);
-
-                        // Обновляем счетчик масок в комнате
-                        var room = Room.FindParentRoom(position);
-                        if (room != null)
+                        var pickup = CreateMaskPickup(position);
+                        if (pickup != null)
                         {
-                            if (!roomMaskCounts.ContainsKey(room.Type))
-                                roomMaskCounts[room.Type] = 0;
-                            roomMaskCounts[room.Type]++;
-                        }
+                            spawnedMasks.Add(pickup);
+                            ApplyMaskVisualEffects(pickup);
 
-                        if (_config.AdvancedSpawn.LogMaskSpawns)
-                        {
+                            // Обновляем счетчик масок в комнате
+                            var room = Room.FindParentRoom(position);
                             if (room != null)
-                                Log.Info($"Респавн маски SCP-096 в {room.Type}");
-                            else
-                                Log.Info($"Респавн маски SCP-096 в неизвестной комнате");
+                            {
+                                if (!roomMaskCounts.ContainsKey(room.Type))
+                                    roomMaskCounts[room.Type] = 0;
+                                roomMaskCounts[room.Type]++;
+                            }
+
+                            if (_config.AdvancedSpawn.LogMaskSpawns)
+                            {
+                                if (room != null)
+                                    Log.Info($"Респавн маски SCP-096 в {room.Type}");
+                                else
+                                    Log.Info($"Респавн маски SCP-096 в неизвестной комнате");
+                            }
                         }
                     }
                 }
             }
         }
 
-        private void ClearAllMasks()
+        public void ClearAllMasks()
         {
             foreach (var mask in spawnedMasks.ToList())
             {
@@ -915,7 +936,6 @@ namespace Scp096Mask
         {
             try
             {
-                // Fallback на обычный хинт Exiled
                 player.ShowHint(message, (ushort)duration);
             }
             catch (Exception ex)

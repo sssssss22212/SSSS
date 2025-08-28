@@ -25,7 +25,7 @@ namespace Scp096Mask
             Instance = this;
 
             // Инициализация Harmony для патчей
-            _harmony = new Harmony($"Scp096Mask-{DateTime.Now.Ticks}");
+            _harmony = new Harmony(string.Format("Scp096Mask-{0}", DateTime.Now.Ticks));
             _harmony.PatchAll();
 
             _eventHandlers = new EventHandlers(Config);
@@ -40,20 +40,21 @@ namespace Scp096Mask
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"Ошибка регистрации серверных настроек: {ex}");
+                    Log.Error(string.Format("Ошибка регистрации серверных настроек: {0}", ex));
                 }
             }
 
-            Log.Info($"Плагин маски SCP-096 версии {Version} загружен!");
-            Log.Info($"Автор: {Author}");
+            Log.Info(string.Format("Плагин маски SCP-096 версии {0} загружен!", Version));
+            Log.Info(string.Format("Автор: {0}", Author));
             
             if (Config.Debug)
             {
                 Log.Debug("Режим отладки включен");
-                Log.Debug($"Тип активации: {Config.ActivationType}");
-                Log.Debug($"Автоспавн: {Config.AutoSpawnEnabled}");
-                Log.Debug($"Количество масок для спавна: {Config.MasksToSpawn}");
-                Log.Debug($"Визуальные настройки - ScaleX: {Config.VisualSettings.ScaleX}, ScaleY: {Config.VisualSettings.ScaleY}, ScaleZ: {Config.VisualSettings.ScaleZ}");
+                Log.Debug(string.Format("Тип активации: {0}", Config.ActivationType));
+                Log.Debug(string.Format("Автоспавн: {0}", Config.AutoSpawnEnabled));
+                Log.Debug(string.Format("Количество масок для спавна: {0}", Config.MasksToSpawn));
+                Log.Debug(string.Format("Визуальные настройки - ScaleX: {0}, ScaleY: {1}, ScaleZ: {2}", 
+                    Config.VisualSettings.ScaleX, Config.VisualSettings.ScaleY, Config.VisualSettings.ScaleZ));
             }
 
             base.OnEnabled();
@@ -95,7 +96,7 @@ namespace Scp096Mask
                         catch (Exception ex)
                         {
                             if (Config.Debug)
-                                Log.Debug($"Ошибка отправки настроек игроку {player.Nickname}: {ex}");
+                                Log.Debug(string.Format("Ошибка отправки настроек игроку {0}: {1}", player.Nickname, ex));
                         }
                     }
                 });
@@ -104,7 +105,7 @@ namespace Scp096Mask
             }
             catch (Exception ex)
             {
-                Log.Error($"Критическая ошибка при регистрации серверных настроек: {ex}");
+                Log.Error(string.Format("Критическая ошибка при регистрации серверных настроек: {0}", ex));
             }
         }
 
@@ -127,7 +128,7 @@ namespace Scp096Mask
                 }
                 catch (Exception ex)
                 {
-                    Log.Debug($"Ошибка при удалении настроек: {ex}");
+                    Log.Debug(string.Format("Ошибка при удалении настроек: {0}", ex));
                 }
             }
 

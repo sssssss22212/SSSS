@@ -19,7 +19,7 @@ namespace Scp096Mask.Commands
     public class MaskCommands : ICommand
     {
         public string Command { get; } = "mask096";
-        public string[] Aliases { get; } = new[] { "mask", "scp096mask", "m096" };
+        public string[] Aliases { get; } = new string[] { "mask", "scp096mask", "m096" };
         public string Description { get; } = "Управление масками SCP-096";
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
@@ -101,7 +101,7 @@ namespace Scp096Mask.Commands
                     return HandleDebugCommand(arguments, out response);
 
                 default:
-                    response = $"<color=red>Неизвестная подкоманда:</color> {subCommand}\n" + GetHelpMessage(isAdmin);
+                    response = string.Format("<color=red>Неизвестная подкоманда:</color> {0}\n{1}", subCommand, GetHelpMessage(isAdmin));
                     return false;
             }
         }
@@ -154,28 +154,15 @@ namespace Scp096Mask.Commands
                 return false;
             }
 
-            // Эмулируем взаимодействие с SCP-096
             try
             {
-                // Вызываем метод взаимодействия из EventHandlers
-                var methodInfo = typeof(EventHandlers).GetMethod("TryInteractWithScp096", 
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                
-                if (methodInfo != null)
-                {
-                    methodInfo.Invoke(Plugin.Instance._eventHandlers, new object[] { player });
-                    response = "<color=green>Попытка использовать маску...</color>";
-                    return true;
-                }
-                else
-                {
-                    response = "<color=orange>Подойдите к SCP-096 и используйте назначенную клавишу!</color>";
-                    return true;
-                }
+                Plugin.Instance._eventHandlers.TryInteractWithScp096(player);
+                response = "<color=green>Попытка использовать маску...</color>";
+                return true;
             }
             catch (Exception ex)
             {
-                response = $"<color=red>Ошибка: {ex.Message}</color>";
+                response = string.Format("<color=red>Ошибка: {0}</color>", ex.Message);
                 return false;
             }
         }
@@ -184,8 +171,8 @@ namespace Scp096Mask.Commands
         {
             if (arguments.Count < 2)
             {
-                response = $"<color=yellow>Режим отладки:</color> {(Plugin.Instance.Config.Debug ? "<color=green>Включен</color>" : "<color=red>Выключен</color>")}\n" +
-                          "Использование: mask096 debug <on/off>";
+                response = string.Format("<color=yellow>Режим отладки:</color> {0}\nИспользование: mask096 debug <on/off>", 
+                    Plugin.Instance.Config.Debug ? "<color=green>Включен</color>" : "<color=red>Выключен</color>");
                 return true;
             }
 
@@ -228,8 +215,8 @@ namespace Scp096Mask.Commands
                 {
                     if (customCount < 1 || customCount > Plugin.Instance.Config.AdvancedSpawn.MaxMasksOnMap)
                     {
-                        response = $"<color=red>Некорректное количество!</color>\n" +
-                                  $"Доступно: от 1 до {Plugin.Instance.Config.AdvancedSpawn.MaxMasksOnMap}";
+                        response = string.Format("<color=red>Некорректное количество!</color>\nДоступно: от 1 до {0}", 
+                            Plugin.Instance.Config.AdvancedSpawn.MaxMasksOnMap);
                         return false;
                     }
                     count = customCount;
@@ -250,8 +237,8 @@ namespace Scp096Mask.Commands
             // Возвращаем оригинальное значение
             Plugin.Instance.Config.MasksToSpawn = originalCount;
 
-            response = $"<color=green>✓ Заспавнено {count} масок SCP-096!</color>\n" +
-                      $"<color=yellow>Всего масок на карте:</color> {Plugin.Instance._eventHandlers.GetMaskCount()}";
+            response = string.Format("<color=green>✓ Заспавнено {0} масок SCP-096!</color>\n<color=yellow>Всего масок на карте:</color> {1}", 
+                count, Plugin.Instance._eventHandlers.GetMaskCount());
             return true;
         }
 
@@ -267,21 +254,33 @@ namespace Scp096Mask.Commands
             var handlers = Plugin.Instance._eventHandlers;
 
             response = "<color=yellow>═══════ Информация о масках SCP-096 ═══════</color>\n" +
-                      $"<color=cyan>Статус плагина:</color> <color=green>Активен</color>\n" +
-                      $"<color=cyan>Масок на карте:</color> <color=white>{handlers.GetMaskCount()}</color>\n" +
-                      $"<color=cyan>Замаскированных SCP-096:</color> <color=white>{handlers.GetMaskedScp096Count()}</color>\n" +
-                      $"<color=cyan>Максимум масок:</color> <color=white>{config.AdvancedSpawn.MaxMasksOnMap}</color>\n\n" +
-                      $"<color=cyan>Настройки:</color>\n" +
-                      $"• Время одевания: <color=white>{config.MaskEquipTime}с</color>\n" +
-                      $"• Дистанция взаимодействия: <color=white>{config.InteractionDistance}м</color>\n" +
-                      $"• Автоспавн: <color=white>{(config.AutoSpawnEnabled ? "Включен" : "Выключен")}</color>\n" +
-                      $"• Требуется маска в руке: <color=white>{(config.RequireMaskInHand ? "Да" : "Нет")}</color>\n" +
-                      $"• Респавн масок: <color=white>{(config.AdvancedSpawn.EnableRespawn ? "Включен" : "Выключен")}</color>\n\n" +
-                      $"<color=cyan>Визуальные эффекты:</color>\n" +
-                      $"• Растяжение X: <color=white>{config.VisualSettings.ScaleX:F1}x</color>\n" +
-                      $"• Растяжение Y: <color=white>{config.VisualSettings.ScaleY:F1}x</color>\n" +
-                      $"• Растяжение Z: <color=white>{config.VisualSettings.ScaleZ:F1}x</color>\n" +
-                      $"• Деформация: <color=white>{(config.VisualSettings.EnableDeformation ? "Включена" : "Выключена")}</color>";
+                      string.Format("<color=cyan>Статус плагина:</color> <color=green>Активен</color>\n" +
+                      "<color=cyan>Масок на карте:</color> <color=white>{0}</color>\n" +
+                      "<color=cyan>Замаскированных SCP-096:</color> <color=white>{1}</color>\n" +
+                      "<color=cyan>Максимум масок:</color> <color=white>{2}</color>\n\n" +
+                      "<color=cyan>Настройки:</color>\n" +
+                      "• Время одевания: <color=white>{3}с</color>\n" +
+                      "• Дистанция взаимодействия: <color=white>{4}м</color>\n" +
+                      "• Автоспавн: <color=white>{5}</color>\n" +
+                      "• Требуется маска в руке: <color=white>{6}</color>\n" +
+                      "• Респавн масок: <color=white>{7}</color>\n\n" +
+                      "<color=cyan>Визуальные эффекты:</color>\n" +
+                      "• Растяжение X: <color=white>{8:F1}x</color>\n" +
+                      "• Растяжение Y: <color=white>{9:F1}x</color>\n" +
+                      "• Растяжение Z: <color=white>{10:F1}x</color>\n" +
+                      "• Деформация: <color=white>{11}</color>",
+                      handlers.GetMaskCount(),
+                      handlers.GetMaskedScp096Count(),
+                      config.AdvancedSpawn.MaxMasksOnMap,
+                      config.MaskEquipTime,
+                      config.InteractionDistance,
+                      config.AutoSpawnEnabled ? "Включен" : "Выключен",
+                      config.RequireMaskInHand ? "Да" : "Нет",
+                      config.AdvancedSpawn.EnableRespawn ? "Включен" : "Выключен",
+                      config.VisualSettings.ScaleX,
+                      config.VisualSettings.ScaleY,
+                      config.VisualSettings.ScaleZ,
+                      config.VisualSettings.EnableDeformation ? "Включена" : "Выключена");
 
             return true;
         }
@@ -302,26 +301,44 @@ namespace Scp096Mask.Commands
             int playersWithMasks = Player.List.Count(p => handlers.HasMask(p));
 
             response = "<color=yellow>═══════ Детальная статистика масок ═══════</color>\n\n" +
-                      $"<color=cyan>Состояние раунда:</color>\n" +
-                      $"• Всего игроков: <color=white>{totalPlayers}</color>\n" +
-                      $"• SCP-096 в раунде: <color=white>{scp096Count}</color>\n" +
-                      $"• Замаскированных: <color=white>{handlers.GetMaskedScp096Count()}</color>\n" +
-                      $"• Игроков с масками: <color=white>{playersWithMasks}</color>\n\n" +
-                      $"<color=cyan>Маски на карте:</color>\n" +
-                      $"• Активных масок: <color=white>{handlers.GetMaskCount()}</color>\n" +
-                      $"• Максимальный лимит: <color=white>{config.AdvancedSpawn.MaxMasksOnMap}</color>\n" +
-                      $"• Минимальное расстояние: <color=white>{config.MinMaskDistance}м</color>\n\n" +
-                      $"<color=cyan>Конфигурация спавна:</color>\n" +
-                      $"• Спавн по умолчанию: <color=white>{config.MasksToSpawn}</color>\n" +
-                      $"• Мин. игроков для спавна: <color=white>{config.AdvancedSpawn.MinPlayersForSpawn}</color>\n" +
-                      $"• Только при наличии SCP-096: <color=white>{(config.AdvancedSpawn.OnlyWhenScp096Present ? "Да" : "Нет")}</color>\n" +
-                      $"• Продвинутый спавн: <color=white>{(config.AdvancedSpawn.UseAdvancedRoomSpawn ? "Включен" : "Выключен")}</color>\n\n" +
-                      $"<color=cyan>Визуальные эффекты:</color>\n" +
-                      $"• Масштаб X/Y/Z: <color=white>{config.VisualSettings.ScaleX:F1}/{config.VisualSettings.ScaleY:F1}/{config.VisualSettings.ScaleZ:F1}</color>\n" +
-                      $"• Свечение: <color=white>{(config.VisualSettings.EnableGlow ? "Включено" : "Выключено")}</color>\n" +
-                      $"• Вращение: <color=white>{(config.VisualSettings.EnableRotation ? "Включено" : "Выключено")}</color>\n" +
-                      $"• Подпрыгивание: <color=white>{(config.VisualSettings.EnableBobbing ? "Включено" : "Выключено")}</color>\n" +
-                      $"• Деформация: <color=white>{(config.VisualSettings.EnableDeformation ? "Включена" : "Выключена")}</color>";
+                      string.Format("<color=cyan>Состояние раунда:</color>\n" +
+                      "• Всего игроков: <color=white>{0}</color>\n" +
+                      "• SCP-096 в раунде: <color=white>{1}</color>\n" +
+                      "• Замаскированных: <color=white>{2}</color>\n" +
+                      "• Игроков с масками: <color=white>{3}</color>\n\n" +
+                      "<color=cyan>Маски на карте:</color>\n" +
+                      "• Активных масок: <color=white>{4}</color>\n" +
+                      "• Максимальный лимит: <color=white>{5}</color>\n" +
+                      "• Минимальное расстояние: <color=white>{6}м</color>\n\n" +
+                      "<color=cyan>Конфигурация спавна:</color>\n" +
+                      "• Спавн по умолчанию: <color=white>{7}</color>\n" +
+                      "• Мин. игроков для спавна: <color=white>{8}</color>\n" +
+                      "• Только при наличии SCP-096: <color=white>{9}</color>\n" +
+                      "• Продвинутый спавн: <color=white>{10}</color>\n\n" +
+                      "<color=cyan>Визуальные эффекты:</color>\n" +
+                      "• Масштаб X/Y/Z: <color=white>{11:F1}/{12:F1}/{13:F1}</color>\n" +
+                      "• Свечение: <color=white>{14}</color>\n" +
+                      "• Вращение: <color=white>{15}</color>\n" +
+                      "• Подпрыгивание: <color=white>{16}</color>\n" +
+                      "• Деформация: <color=white>{17}</color>",
+                      totalPlayers,
+                      scp096Count,
+                      handlers.GetMaskedScp096Count(),
+                      playersWithMasks,
+                      handlers.GetMaskCount(),
+                      config.AdvancedSpawn.MaxMasksOnMap,
+                      config.MinMaskDistance,
+                      config.MasksToSpawn,
+                      config.AdvancedSpawn.MinPlayersForSpawn,
+                      config.AdvancedSpawn.OnlyWhenScp096Present ? "Да" : "Нет",
+                      config.AdvancedSpawn.UseAdvancedRoomSpawn ? "Включен" : "Выключен",
+                      config.VisualSettings.ScaleX,
+                      config.VisualSettings.ScaleY,
+                      config.VisualSettings.ScaleZ,
+                      config.VisualSettings.EnableGlow ? "Включено" : "Выключено",
+                      config.VisualSettings.EnableRotation ? "Включено" : "Выключено",
+                      config.VisualSettings.EnableBobbing ? "Включено" : "Выключено",
+                      config.VisualSettings.EnableDeformation ? "Включена" : "Выключена");
 
             return true;
         }
@@ -338,7 +355,7 @@ namespace Scp096Mask.Commands
             Player player = Player.Get(arguments.At(1));
             if (player == null)
             {
-                response = $"<color=red>Игрок с ID '{arguments.At(1)}' не найден!</color>";
+                response = string.Format("<color=red>Игрок с ID '{0}' не найден!</color>", arguments.At(1));
                 return false;
             }
 
@@ -362,27 +379,28 @@ namespace Scp096Mask.Commands
 
             try
             {
-                var medkitItem = Item.Create(ItemType.Medkit);
-                var pickup = medkitItem.CreatePickup(position);
+                // Создаем пикап напрямую
+                var pickup = Exiled.API.Features.Pickups.Pickup.CreateAndSpawn(ItemType.Medkit, position, Quaternion.identity);
                 
-                if (Plugin.Instance?._eventHandlers != null)
+                if (Plugin.Instance?._eventHandlers != null && pickup != null)
                 {
                     Plugin.Instance._eventHandlers.spawnedMasks.Add(pickup);
                     
-                    // Применяем визуальные эффекты с помощью рефлексии
+                    // Применяем визуальные эффекты
                     var methodInfo = typeof(EventHandlers).GetMethod("ApplyMaskVisualEffects", 
                         System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                     methodInfo?.Invoke(Plugin.Instance._eventHandlers, new object[] { pickup });
                 }
                 
-                response = $"<color=green>✓ Маска SCP-096 создана!</color>\n" +
-                          $"<color=cyan>Позиция:</color> <color=white>{position.x:F1}, {position.y:F1}, {position.z:F1}</color>\n" +
-                          $"<color=cyan>Для игрока:</color> <color=yellow>{player.Nickname}</color> (<color=gray>{player.Id}</color>)";
+                response = string.Format("<color=green>✓ Маска SCP-096 создана!</color>\n" +
+                          "<color=cyan>Позиция:</color> <color=white>{0:F1}, {1:F1}, {2:F1}</color>\n" +
+                          "<color=cyan>Для игрока:</color> <color=yellow>{3}</color> (<color=gray>{4}</color>)",
+                          position.x, position.y, position.z, player.Nickname, player.Id);
                 return true;
             }
             catch (Exception ex)
             {
-                response = $"<color=red>Ошибка при создании маски:</color> {ex.Message}";
+                response = string.Format("<color=red>Ошибка при создании маски:</color> {0}", ex.Message);
                 return false;
             }
         }
@@ -398,20 +416,20 @@ namespace Scp096Mask.Commands
             Player player = Player.Get(arguments.At(1));
             if (player == null)
             {
-                response = $"<color=red>Игрок с ID '{arguments.At(1)}' не найден!</color>";
+                response = string.Format("<color=red>Игрок с ID '{0}' не найден!</color>", arguments.At(1));
                 return false;
             }
 
             if (!player.IsAlive)
             {
-                response = $"<color=red>Игрок {player.Nickname} мертв!</color>";
+                response = string.Format("<color=red>Игрок {0} мертв!</color>", player.Nickname);
                 return false;
             }
 
             if (Plugin.Instance?._eventHandlers != null && 
                 Plugin.Instance._eventHandlers.HasMask(player))
             {
-                response = $"<color=orange>У игрока {player.Nickname} уже есть маска!</color>";
+                response = string.Format("<color=orange>У игрока {0} уже есть маска!</color>", player.Nickname);
                 return false;
             }
 
@@ -424,14 +442,15 @@ namespace Scp096Mask.Commands
                     Plugin.Instance._eventHandlers.AddPlayerMask(player, medkit);
                 }
                 
-                response = $"<color=green>✓ Маска SCP-096 выдана!</color>\n" +
-                          $"<color=cyan>Игрок:</color> <color=yellow>{player.Nickname}</color> (<color=gray>{player.Id}</color>)\n" +
-                          $"<color=gray>Маска добавлена в инвентарь</color>";
+                response = string.Format("<color=green>✓ Маска SCP-096 выдана!</color>\n" +
+                          "<color=cyan>Игрок:</color> <color=yellow>{0}</color> (<color=gray>{1}</color>)\n" +
+                          "<color=gray>Маска добавлена в инвентарь</color>",
+                          player.Nickname, player.Id);
                 return true;
             }
             catch (Exception ex)
             {
-                response = $"<color=red>Ошибка при выдаче маски:</color> {ex.Message}";
+                response = string.Format("<color=red>Ошибка при выдаче маски:</color> {0}", ex.Message);
                 return false;
             }
         }
@@ -447,13 +466,13 @@ namespace Scp096Mask.Commands
             Player player = Player.Get(arguments.At(1));
             if (player == null)
             {
-                response = $"<color=red>Игрок с ID '{arguments.At(1)}' не найден!</color>";
+                response = string.Format("<color=red>Игрок с ID '{0}' не найден!</color>", arguments.At(1));
                 return false;
             }
 
             if (player.Role.Type != RoleTypeId.Scp096)
             {
-                response = $"<color=red>Игрок {player.Nickname} не является SCP-096!</color>";
+                response = string.Format("<color=red>Игрок {0} не является SCP-096!</color>", player.Nickname);
                 return false;
             }
 
@@ -465,13 +484,14 @@ namespace Scp096Mask.Commands
 
             if (!Plugin.Instance._eventHandlers.IsScp096Masked(player))
             {
-                response = $"<color=orange>На SCP-096 {player.Nickname} нет маски!</color>";
+                response = string.Format("<color=orange>На SCP-096 {0} нет маски!</color>", player.Nickname);
                 return false;
             }
 
             Plugin.Instance._eventHandlers.RemoveMaskFromScp096(player);
-            response = $"<color=green>✓ Маска снята с SCP-096!</color>\n" +
-                      $"<color=cyan>Игрок:</color> <color=yellow>{player.Nickname}</color> (<color=gray>{player.Id}</color>)";
+            response = string.Format("<color=green>✓ Маска снята с SCP-096!</color>\n" +
+                      "<color=cyan>Игрок:</color> <color=yellow>{0}</color> (<color=gray>{1}</color>)",
+                      player.Nickname, player.Id);
             return true;
         }
 
@@ -491,16 +511,17 @@ namespace Scp096Mask.Commands
                 return true;
             }
 
-            response = $"<color=yellow>═══ Замаскированные SCP-096 ({maskedScps.Count}) ═══</color>\n";
+            response = string.Format("<color=yellow>═══ Замаскированные SCP-096 ({0}) ═══</color>\n", maskedScps.Count);
             
             for (int i = 0; i < maskedScps.Count; i++)
             {
                 var scp = maskedScps[i];
                 string status = scp.IsAlive ? "<color=green>Жив</color>" : "<color=red>Мертв</color>";
-                string health = scp.IsAlive ? $"HP: <color=white>{scp.Health:F0}</color>" : "";
+                string health = scp.IsAlive ? string.Format("HP: <color=white>{0:F0}</color>", scp.Health) : "";
                 
-                response += $"<color=cyan>{i + 1}.</color> <color=yellow>{scp.Nickname}</color> " +
-                           $"<color=gray>(ID: {scp.Id})</color> {status} {health}\n";
+                response += string.Format("<color=cyan>{0}.</color> <color=yellow>{1}</color> " +
+                           "<color=gray>(ID: {2})</color> {3} {4}\n",
+                           i + 1, scp.Nickname, scp.Id, status, health);
             }
 
             return true;
@@ -516,13 +537,11 @@ namespace Scp096Mask.Commands
 
             int maskCount = Plugin.Instance._eventHandlers.GetMaskCount();
             
-            // Очищаем все маски используя рефлексию
-            var methodInfo = typeof(EventHandlers).GetMethod("ClearAllMasks", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            methodInfo?.Invoke(Plugin.Instance._eventHandlers, null);
+            // Очищаем все маски
+            Plugin.Instance._eventHandlers.ClearAllMasks();
 
-            response = $"<color=green>✓ Все маски удалены с карты!</color>\n" +
-                      $"<color=cyan>Удалено масок:</color> <color=white>{maskCount}</color>";
+            response = string.Format("<color=green>✓ Все маски удалены с карты!</color>\n" +
+                      "<color=cyan>Удалено масок:</color> <color=white>{0}</color>", maskCount);
             return true;
         }
 
@@ -538,7 +557,7 @@ namespace Scp096Mask.Commands
             }
             catch (Exception ex)
             {
-                response = $"<color=red>Ошибка при перезагрузке:</color> {ex.Message}";
+                response = string.Format("<color=red>Ошибка при перезагрузке:</color> {0}", ex.Message);
                 return false;
             }
         }
@@ -551,7 +570,7 @@ namespace Scp096Mask.Commands
     public class UseMaskCommand : ICommand
     {
         public string Command { get; } = "usemask";
-        public string[] Aliases { get; } = new[] { "mask", "umask" };
+        public string[] Aliases { get; } = new string[] { "mask", "umask" };
         public string Description { get; } = "Быстро использовать маску SCP-096";
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
@@ -563,7 +582,7 @@ namespace Scp096Mask.Commands
             }
 
             // Переадресуем на основную команду
-            return new MaskCommands().Execute(new ArraySegment<string>(new[] { "use" }), sender, out response);
+            return new MaskCommands().Execute(new ArraySegment<string>(new string[] { "use" }), sender, out response);
         }
     }
 
@@ -575,7 +594,7 @@ namespace Scp096Mask.Commands
     public class MaskInfoCommand : ICommand
     {
         public string Command { get; } = "maskinfo";
-        public string[] Aliases { get; } = new[] { "minfo", "mask096info" };
+        public string[] Aliases { get; } = new string[] { "minfo", "mask096info" };
         public string Description { get; } = "Подробная информация о системе масок";
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
@@ -596,47 +615,54 @@ namespace Scp096Mask.Commands
             var handlers = Plugin.Instance._eventHandlers;
 
             response = "<color=yellow>═══════ Система масок SCP-096 ═══════</color>\n\n" +
-                      $"<color=cyan>Версия плагина:</color> <color=white>{Plugin.Instance.Version}</color>\n" +
-                      $"<color=cyan>Автор:</color> <color=white>{Plugin.Instance.Author}</color>\n" +
-                      $"<color=cyan>Режим отладки:</color> <color=white>{(config.Debug ? "Включен" : "Выключен")}</color>\n\n" +
-                      $"<color=cyan>Настройки спавна:</color>\n" +
-                      $"• Зоны спавна:\n";
+                      string.Format("<color=cyan>Версия плагина:</color> <color=white>{0}</color>\n" +
+                      "<color=cyan>Автор:</color> <color=white>{1}</color>\n" +
+                      "<color=cyan>Режим отладки:</color> <color=white>{2}</color>\n\n" +
+                      "<color=cyan>Настройки спавна:</color>\n" +
+                      "• Зоны спавна:\n",
+                      Plugin.Instance.Version,
+                      Plugin.Instance.Author,
+                      config.Debug ? "Включен" : "Выключен");
 
             foreach (var zone in config.SpawnWeights.Take(3))
             {
-                response += $"  - {zone.Key}: <color=white>{zone.Value}%</color>\n";
+                response += string.Format("  - {0}: <color=white>{1}%</color>\n", zone.Key, zone.Value);
             }
 
             if (config.SpawnWeights.Count > 3)
             {
-                response += $"  <color=gray>... и ещё {config.SpawnWeights.Count - 3} зон</color>\n";
+                response += string.Format("  <color=gray>... и ещё {0} зон</color>\n", config.SpawnWeights.Count - 3);
             }
 
-            response += $"\n<color=cyan>Специальные комнаты:</color>\n";
+            response += "\n<color=cyan>Специальные комнаты:</color>\n";
             foreach (var room in config.SpecificRoomSpawn.Take(3))
             {
-                response += $"  - {room.Key}: <color=white>{room.Value}%</color>\n";
+                response += string.Format("  - {0}: <color=white>{1}%</color>\n", room.Key, room.Value);
             }
 
             if (config.SpecificRoomSpawn.Count > 3)
             {
-                response += $"  <color=gray>... и ещё {config.SpecificRoomSpawn.Count - 3} комнат</color>\n";
+                response += string.Format("  <color=gray>... и ещё {0} комнат</color>\n", config.SpecificRoomSpawn.Count - 3);
             }
 
-            response += $"\n<color=cyan>Продвинутые настройки:</color>\n";
+            response += "\n<color=cyan>Продвинутые настройки:</color>\n";
             if (config.RoomSpawnConfigs.Count > 0)
             {
-                response += $"• Конфигураций комнат: <color=white>{config.RoomSpawnConfigs.Count}</color>\n";
+                response += string.Format("• Конфигураций комнат: <color=white>{0}</color>\n", config.RoomSpawnConfigs.Count);
                 foreach (var roomConfig in config.RoomSpawnConfigs.Where(c => c.IsEnabled).Take(3))
                 {
-                    response += $"  - {roomConfig.RoomType}: <color=white>{roomConfig.SpawnChance}%</color> (макс: {roomConfig.MaxMasksInRoom})\n";
+                    response += string.Format("  - {0}: <color=white>{1}%</color> (макс: {2})\n", 
+                        roomConfig.RoomType, roomConfig.SpawnChance, roomConfig.MaxMasksInRoom);
                 }
             }
 
-            response += $"\n<color=cyan>Текущее состояние:</color>\n" +
-                       $"• Масок на карте: <color=white>{handlers.GetMaskCount()}</color>\n" +
-                       $"• Замаскированных SCP-096: <color=white>{handlers.GetMaskedScp096Count()}</color>\n" +
-                       $"• Раунд активен: <color=white>{(Round.IsStarted ? "Да" : "Нет")}</color>";
+            response += string.Format("\n<color=cyan>Текущее состояние:</color>\n" +
+                       "• Масок на карте: <color=white>{0}</color>\n" +
+                       "• Замаскированных SCP-096: <color=white>{1}</color>\n" +
+                       "• Раунд активен: <color=white>{2}</color>",
+                       handlers.GetMaskCount(),
+                       handlers.GetMaskedScp096Count(),
+                       Round.IsStarted ? "Да" : "Нет");
 
             return true;
         }

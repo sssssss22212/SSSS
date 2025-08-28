@@ -3,7 +3,6 @@ using System.ComponentModel;
 using Exiled.API.Interfaces;
 using Exiled.API.Enums;
 using Scp096Mask.Enums;
-using UnityEngine;
 
 namespace Scp096Mask
 {
@@ -65,10 +64,10 @@ namespace Scp096Mask
                 MaxMasksInRoom = 2,
                 MinPlayersRequired = 3,
                 SpawnOnlyWithScp096 = true,
-                SpawnPositions = new List<Vector3>
+                SpawnPositions = new List<SpawnPosition>
                 {
-                    new Vector3(0f, 1.2f, 0f),
-                    new Vector3(3f, 1.2f, 3f)
+                    new SpawnPosition { X = 0f, Y = 1.2f, Z = 0f },
+                    new SpawnPosition { X = 3f, Y = 1.2f, Z = 3f }
                 }
             },
             new RoomSpawnConfig
@@ -78,9 +77,9 @@ namespace Scp096Mask
                 MaxMasksInRoom = 1,
                 MinPlayersRequired = 5,
                 SpawnOnlyWithScp096 = false,
-                SpawnPositions = new List<Vector3>
+                SpawnPositions = new List<SpawnPosition>
                 {
-                    new Vector3(-5f, 1.2f, 0f)
+                    new SpawnPosition { X = -5f, Y = 1.2f, Z = 0f }
                 }
             },
             new RoomSpawnConfig
@@ -90,7 +89,7 @@ namespace Scp096Mask
                 MaxMasksInRoom = 1,
                 MinPlayersRequired = 4,
                 SpawnOnlyWithScp096 = false,
-                SpawnPositions = new List<Vector3>()
+                SpawnPositions = new List<SpawnPosition>()
             }
         };
 
@@ -132,6 +131,19 @@ namespace Scp096Mask
     }
 
     [System.Serializable]
+    public class SpawnPosition
+    {
+        [Description("Координата X")]
+        public float X { get; set; } = 0f;
+
+        [Description("Координата Y")]
+        public float Y { get; set; } = 1.2f;
+
+        [Description("Координата Z")]
+        public float Z { get; set; } = 0f;
+    }
+
+    [System.Serializable]
     public class RoomSpawnConfig
     {
         [Description("Тип комнаты")]
@@ -150,7 +162,7 @@ namespace Scp096Mask
         public bool SpawnOnlyWithScp096 { get; set; } = false;
 
         [Description("Конкретные позиции для спавна (если пусто - случайные)")]
-        public List<Vector3> SpawnPositions { get; set; } = new List<Vector3>();
+        public List<SpawnPosition> SpawnPositions { get; set; } = new List<SpawnPosition>();
 
         [Description("Включен ли спавн в этой комнате")]
         public bool IsEnabled { get; set; } = true;

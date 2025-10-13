@@ -1,0 +1,33 @@
+{
+  "name": "minecraft-intelligent-bot",
+  "version": "2.0.0",
+  "description": "Умный автономный бот для Minecraft 1.21.8 с обучением и расширенным функционалом",
+  "main": "minecraft_bot.js",
+  "scripts": {
+    "start": "node minecraft_bot.js",
+    "dev": "node minecraft_bot.js"
+  },
+  "keywords": [
+    "minecraft",
+    "bot",
+    "mineflayer",
+    "ai",
+    "autonomous"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "mineflayer": "^4.20.1",
+    "mineflayer-pathfinder": "^2.4.4",
+    "mineflayer-pvp": "^1.3.2",
+    "mineflayer-collectblock": "^1.4.0",
+    "mineflayer-auto-eat": "^4.1.0",
+    "mineflayer-armor-manager": "^1.3.0",
+    "mineflayer-tool": "^1.2.0",
+    "vec3": "^0.1.8",
+    "prismarine-item": "^1.14.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

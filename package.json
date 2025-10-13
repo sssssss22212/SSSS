@@ -1,0 +1,26 @@
+{
+  "name": "mega-mc-bot",
+  "version": "0.1.0",
+  "description": "Powerful Minecraft bot with building, mining, PvP, learning",
+  "main": "bot.js",
+  "license": "MIT",
+  "private": true,
+  "engines": { "node": ">=18.0.0" },
+  "scripts": {
+    "start": "node bot.js",
+    "start:server": "node bot.js --host n1.netronyx.pro --port 4007 --version 1.21.1",
+    "start:offline": "node bot.js --host n1.netronyx.pro --port 4007 --auth offline",
+    "check": "node -v && npm -v"
+  },
+  "dependencies": {
+    "mineflayer": "^4.33.0",
+    "mineflayer-pathfinder": "^2.4.5",
+    "mineflayer-collectblock": "^1.6.0",
+    "mineflayer-pvp": "^1.3.2",
+    "mineflayer-auto-eat": "^3.3.6",
+    "mineflayer-armor-manager": "^2.0.1",
+    "mineflayer-tool": "^1.2.0",
+    "vec3": "^0.1.10",
+    "yargs": "^17.7.2"
+  }
+}

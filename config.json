@@ -1,0 +1,39 @@
+{
+  "server": {
+    "host": "n1.netronyx.pro",
+    "port": 4007,
+    "version": "1.21.8"
+  },
+  "bot": {
+    "username": "SmartBot",
+    "auth": "offline",
+    "autoReconnect": true,
+    "reconnectDelay": 5000
+  },
+  "behavior": {
+    "autoMode": true,
+    "autoEat": true,
+    "autoDefend": true,
+    "autoEquip": true,
+    "autoMine": false,
+    "autoBuild": false
+  },
+  "settings": {
+    "chatCommandsOnly": false,
+    "whisperCommands": true,
+    "logToFile": false,
+    "debugMode": false
+  },
+  "limits": {
+    "maxMiningDistance": 64,
+    "maxBuildHeight": 256,
+    "inventoryThreshold": 35,
+    "healthRetreatThreshold": 8,
+    "foodEatThreshold": 14
+  },
+  "learning": {
+    "enabled": true,
+    "saveInterval": 60000,
+    "dataFile": "bot_learning_data.json"
+  }
+}
